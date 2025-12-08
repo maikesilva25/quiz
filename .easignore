@@ -1,0 +1,73 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.apk
+*.aab
+*.ipa
+
+# Cache
+.expo/
+.expo-shared/
+.cache/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentação e scripts locais
+*.md
+*.bat
+*.sh
+!README.md
+
+# Admin panel (não necessário no app)
+admin-panel/
+
+# Arquivos temporários
+*.tmp
+*.temp
+AppData/
+Local/Temp/
+**/Temp/
+**/temp/
+**/*.xml
+**/*(1).*
+**/*(2).*
+**/*(3).*
+**/*(4).*
+**/*(5).*
+**/*(6).*
+**/*(7).*
+**/*(8).*
+**/*(9).*
+**/*([0-9]).*
+
+# Firebase local
+.firebase/
+firebase-debug.log
+
+# Testes
+coverage/
+.nyc_output/
+
+# Outros
+.env.local
+.env.*.local
+
