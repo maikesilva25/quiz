@@ -47,6 +47,15 @@
             <!-- Tab: Solicitações -->
             <div id="requests-tab" class="tab-content">
                 <h2>Solicitações de Conta</h2>
+                <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <select id="requestFilter" style="padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="all">Todas</option>
+                        <option value="pending" selected>Pendentes</option>
+                        <option value="approved">Aprovadas</option>
+                        <option value="rejected">Rejeitadas</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="clearProcessedRequests()">🗑️ Limpar Processadas</button>
+                </div>
                 <div id="requestsList" class="list-container">
                     <div class="loading">Carregando...</div>
                 </div>
@@ -244,6 +253,35 @@
             <div class="modal-actions">
                 <button id="confirmCoinsBtn" class="btn btn-success" style="flex: 1;">Confirmar</button>
                 <button onclick="closeCoinsModal()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para exibir senha criada -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closePasswordModal()">&times;</span>
+            <h2>✅ Conta Criada com Sucesso!</h2>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <p><strong>Usuário:</strong> <span id="passwordUserName"></span></p>
+                    <p><strong>Email:</strong> <span id="passwordUserEmail"></span></p>
+                </div>
+                <div style="margin-bottom: 16px; padding: 16px; background: #f0f0f0; border-radius: 8px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Senha Temporária:</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="passwordDisplay" readonly 
+                               style="flex: 1; padding: 12px; border: 2px solid #4CAF50; border-radius: 8px; font-size: 18px; font-weight: bold; text-align: center; background: #fff;"
+                               onclick="this.select(); document.execCommand('copy'); alert('Senha copiada!');">
+                        <button class="btn btn-primary" onclick="copyPassword()" style="padding: 12px 20px;">📋 Copiar</button>
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 16px;">
+                    <strong>⚠️ IMPORTANTE:</strong> O usuário precisará trocar a senha no primeiro login.
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closePasswordModal()" class="btn btn-success" style="flex: 1;">OK</button>
             </div>
         </div>
     </div>

@@ -164,6 +164,12 @@ window.addEventListener('DOMContentLoaded', () => {
       oracaoFilter.addEventListener('change', performOracaoSearch);
     }
     
+    // Filtro de solicitações
+    const requestFilter = document.getElementById('requestFilter');
+    if (requestFilter) {
+      requestFilter.addEventListener('change', loadRequests);
+    }
+    
     // Busca de chats
     const chatSearch = document.getElementById('chatSearch');
     const chatFilter = document.getElementById('chatFilter');
@@ -295,6 +301,11 @@ async function loadRequests() {
       container.innerHTML = '<div class="empty-state">Erro: Firebase não está disponível</div>';
       return;
     }
+    
+    // Obter filtro selecionado
+    const filterSelect = document.getElementById('requestFilter');
+    const filter = filterSelect ? filterSelect.value : 'pending';
+    
     const snapshot = await dbInstance.collection('accountRequests')
       .orderBy('createdAt', 'desc')
       .get();
@@ -305,16 +316,31 @@ async function loadRequests() {
     }
     
     container.innerHTML = '';
+    let hasResults = false;
+    
     snapshot.forEach(doc => {
       const data = doc.data();
+      const status = data.status || 'pending';
+      
+      // Aplicar filtro
+      if (filter !== 'all' && status !== filter) {
+        return;
+      }
+      
+      hasResults = true;
       const card = createRequestCard(doc.id, data);
       container.appendChild(card);
     });
+    
+    if (!hasResults) {
+      container.innerHTML = '<div class="empty-state">Nenhuma solicitação encontrada com o filtro selecionado</div>';
+    }
   } catch (error) {
     console.error('Erro ao carregar solicitações:', error);
     container.innerHTML = '<div class="empty-state">Erro ao carregar solicitações</div>';
   }
 }
+
 
 // Criar card de solicitação
 function createRequestCard(id, data) {
@@ -426,22 +452,13 @@ window.approveRequest = async function(requestId) {
         tempPassword: tempPassword,
       });
       
+      // Mostrar modal com a senha antes de fazer logout
+      showPasswordModal(requestData.name, requestData.email, tempPassword);
+      
       // Fazer logout do novo usuário criado
       // Nota: O Firebase automaticamente faz login com o novo usuário ao criá-lo
       // Por isso precisamos fazer logout e o admin precisará fazer login novamente
-      await authInstance.signOut();
-      
-      // Mostrar mensagem e redirecionar para login
-      alert(`✅ Conta criada com sucesso!\n\n` +
-            `Usuário: ${requestData.name}\n` +
-            `Email: ${requestData.email}\n` +
-            `Senha temporária: ${tempPassword}\n\n` +
-            `⚠️ Você será redirecionado para fazer login novamente.`);
-      
-      // Redirecionar para login após um breve delay
-      setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 2000);
+      // Mas vamos fazer isso após o usuário fechar o modal
       
       return; // Não continuar com o resto do código
       
@@ -1563,4 +1580,93 @@ window.saveSettings = async function() {
     console.error('Erro ao salvar configurações:', error);
     alert('Erro ao salvar configurações');
   }
+}
+
+// Modal de senha
+let pendingLogout = false;
+
+window.showPasswordModal = function(name, email, password) {
+  document.getElementById('passwordUserName').textContent = name;
+  document.getElementById('passwordUserEmail').textContent = email;
+  document.getElementById('passwordDisplay').value = password;
+  document.getElementById('passwordModal').style.display = 'block';
+  pendingLogout = true;
 };
+
+window.closePasswordModal = async function() {
+  document.getElementById('passwordModal').style.display = 'none';
+  
+  if (pendingLogout) {
+    pendingLogout = false;
+    const authInstance = window.auth;
+    
+    // Fazer logout e redirecionar
+    await authInstance.signOut();
+    alert('⚠️ Você será redirecionado para fazer login novamente.');
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 1000);
+  }
+};
+
+window.copyPassword = function() {
+  const passwordInput = document.getElementById('passwordDisplay');
+  passwordInput.select();
+  document.execCommand('copy');
+  
+  // Feedback visual
+  const btn = document.querySelector('#passwordModal button.btn-primary');
+  if (btn) {
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Copiado!';
+    btn.style.backgroundColor = '#4CAF50';
+    
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.backgroundColor = '';
+    }, 2000);
+  }
+  
+  // Também mostrar alerta
+  alert('Senha copiada para a área de transferência!');
+};
+
+// Limpar solicitações processadas
+window.clearProcessedRequests = async function() {
+  if (!confirm('Deseja remover todas as solicitações aprovadas e rejeitadas?\n\nEsta ação não pode ser desfeita!')) {
+    return;
+  }
+  
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    const snapshot = await dbInstance.collection('accountRequests')
+      .where('status', 'in', ['approved', 'rejected'])
+      .get();
+    
+    if (snapshot.empty) {
+      alert('Nenhuma solicitação processada para remover.');
+      return;
+    }
+    
+    const batch = dbInstance.batch();
+    let count = 0;
+    
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+      count++;
+    });
+    
+    await batch.commit();
+    
+    alert(`✅ ${count} solicitação(ões) removida(s) com sucesso!`);
+    loadRequests();
+  } catch (error) {
+    console.error('Erro ao limpar solicitações:', error);
+    alert('Erro ao limpar solicitações: ' + error.message);
+  }
+};;
