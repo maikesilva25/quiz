@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Orações</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🛡️ Painel Administrativo</h1>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-secondary">Sair</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab-btn" data-tab="requests">📝 Solicitações</button>
+            <button class="tab-btn" data-tab="users">👥 Usuários</button>
+            <button class="tab-btn" data-tab="oracoes">🙏 Orações</button>
+            <button class="tab-btn" data-tab="chats">💬 Chats</button>
+            <button class="tab-btn" data-tab="comments">💭 Comentários</button>
+            <button class="tab-btn" data-tab="quiz">📚 Quiz</button>
+            <button class="tab-btn" data-tab="shop">🛒 Loja</button>
+            <button class="tab-btn" data-tab="notifications">🔔 Notificações</button>
+            <button class="tab-btn" data-tab="reports">📈 Relatórios</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Configurações</button>
+        </div>
+
+        <div class="content">
+            <!-- Tab: Dashboard -->
+            <div id="dashboard-tab" class="tab-content active">
+                <h2>📊 Dashboard</h2>
+                <div id="dashboardStats" class="stats-grid">
+                    <div class="loading">Carregando estatísticas...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Solicitações -->
+            <div id="requests-tab" class="tab-content">
+                <h2>Solicitações de Conta</h2>
+                <div id="requestsList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Usuários -->
+            <div id="users-tab" class="tab-content">
+                <div class="search-bar">
+                    <input type="text" id="userSearch" placeholder="Buscar usuário..." />
+                    <select id="userFilter" style="margin-left: 8px; padding: 8px;">
+                        <option value="all">Todos</option>
+                        <option value="verified">Verificados</option>
+                        <option value="blocked">Bloqueados</option>
+                        <option value="admin">Administradores</option>
+                    </select>
+                </div>
+                <div id="usersList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Orações -->
+            <div id="oracoes-tab" class="tab-content">
+                <div class="search-bar">
+                    <input type="text" id="oracaoSearch" placeholder="Buscar oração..." />
+                    <select id="oracaoFilter" style="margin-left: 8px; padding: 8px;">
+                        <option value="all">Todas</option>
+                        <option value="text">Texto</option>
+                        <option value="photo">Foto</option>
+                        <option value="video">Vídeo</option>
+                        <option value="pedido">Pedido de Oração</option>
+                    </select>
+                </div>
+                <div id="oracoesList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Chats -->
+            <div id="chats-tab" class="tab-content">
+                <h2>💬 Gerenciamento de Chats</h2>
+                <div class="search-bar">
+                    <input type="text" id="chatSearch" placeholder="Buscar chat..." />
+                    <select id="chatFilter" style="margin-left: 8px; padding: 8px;">
+                        <option value="all">Todos</option>
+                        <option value="individual">Individual</option>
+                        <option value="group">Grupo</option>
+                    </select>
+                </div>
+                <div id="chatsList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Comentários -->
+            <div id="comments-tab" class="tab-content">
+                <h2>💭 Gerenciamento de Comentários</h2>
+                <div class="search-bar">
+                    <input type="text" id="commentSearch" placeholder="Buscar comentário..." />
+                </div>
+                <div id="commentsList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Quiz -->
+            <div id="quiz-tab" class="tab-content">
+                <h2>📚 Gerenciamento de Quiz</h2>
+                <div style="margin-bottom: 16px;">
+                    <button class="btn btn-primary" onclick="showCreateQuestionModal()">+ Nova Pergunta</button>
+                    <button class="btn btn-secondary" onclick="loadQuizResults()">Ver Resultados</button>
+                </div>
+                <div id="quizQuestionsList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Loja -->
+            <div id="shop-tab" class="tab-content">
+                <h2>🛒 Gerenciamento de Loja</h2>
+                <div style="margin-bottom: 16px;">
+                    <button class="btn btn-primary" onclick="showCreateItemModal()">+ Novo Item</button>
+                    <button class="btn btn-secondary" onclick="loadPurchases()">Ver Compras</button>
+                </div>
+                <div id="shopItemsList" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Notificações -->
+            <div id="notifications-tab" class="tab-content">
+                <h2>🔔 Enviar Notificações</h2>
+                <div class="item-card" style="margin-bottom: 20px;">
+                    <h3>Nova Notificação</h3>
+                    <div style="margin-bottom: 12px;">
+                        <label>Tipo:</label>
+                        <select id="notificationType" style="width: 100%; padding: 8px; margin-top: 4px;">
+                            <option value="all">Todos os usuários</option>
+                            <option value="user">Usuário específico</option>
+                            <option value="verified">Apenas verificados</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label>Usuário (se específico):</label>
+                        <input type="text" id="notificationUserId" placeholder="ID do usuário" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label>Título:</label>
+                        <input type="text" id="notificationTitle" placeholder="Título da notificação" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label>Mensagem:</label>
+                        <textarea id="notificationMessage" placeholder="Mensagem da notificação" rows="4" style="width: 100%; padding: 8px; margin-top: 4px;"></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="sendNotification()">Enviar Notificação</button>
+                </div>
+            </div>
+
+            <!-- Tab: Relatórios -->
+            <div id="reports-tab" class="tab-content">
+                <h2>📈 Relatórios e Logs</h2>
+                <div style="margin-bottom: 16px;">
+                    <button class="btn btn-primary" onclick="exportData()">📥 Exportar Dados</button>
+                    <button class="btn btn-secondary" onclick="loadActivityLogs()">Ver Logs</button>
+                </div>
+                <div id="reportsContent" class="list-container">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Configurações -->
+            <div id="settings-tab" class="tab-content">
+                <h2>⚙️ Configurações do Sistema</h2>
+                <div id="settingsContent" class="list-container">
+                    <div class="item-card">
+                        <h3>Configurações Gerais</h3>
+                        <div style="margin-bottom: 12px;">
+                            <label>Nome do App:</label>
+                            <input type="text" id="appName" value="Orações" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Manutenção:</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="maintenanceMode" />
+                                <span class="slider"></span>
+                            </label>
+                            <span style="margin-left: 8px;">Modo de Manutenção</span>
+                        </div>
+                        <button class="btn btn-success" onclick="saveSettings()">Salvar Configurações</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para aprovar/rejeitar -->
+    <div id="requestModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Aprovar Solicitação</h2>
+            <div id="modalBody"></div>
+            <div class="modal-actions">
+                <button id="approveBtn" class="btn btn-success">Aprovar</button>
+                <button id="rejectBtn" class="btn btn-danger">Rejeitar</button>
+                <button id="cancelBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para adicionar moedas -->
+    <div id="coinsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCoinsModal()">&times;</span>
+            <h2>💰 Adicionar Moedas</h2>
+            <div id="coinsModalBody">
+                <p style="margin-bottom: 16px;"><strong>Usuário:</strong> <span id="coinsUserName"></span></p>
+                <p style="margin-bottom: 16px;"><strong>Moedas Atuais:</strong> <span id="coinsCurrentAmount" style="color: #FFD700; font-weight: bold;"></span></p>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px;">Quantidade de Moedas</label>
+                    <input type="number" id="coinsAmount" min="1" value="100" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px;">Ação</label>
+                    <select id="coinsAction" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+                        <option value="add">Adicionar</option>
+                        <option value="set">Definir Valor</option>
+                        <option value="subtract">Subtrair</option>
+                    </select>
+                </div>
+                <div id="coinsPreview" style="padding: 12px; background: #f0f0f0; border-radius: 8px; margin-bottom: 16px;">
+                    <strong>Novo Total:</strong> <span id="coinsNewTotal" style="color: #FFD700; font-weight: bold;"></span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmCoinsBtn" class="btn btn-success" style="flex: 1;">Confirmar</button>
+                <button onclick="closeCoinsModal()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

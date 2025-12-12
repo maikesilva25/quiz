@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1284" height="2778" viewBox="0 0 1284 2778" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1284" height="2778" fill="url(#splashGrad)"/>
+  <g transform="translate(642, 1389)">
+    <circle cx="0" cy="0" r="192.6" fill="white" opacity="0.2"/>
+    <path d="M0 -128.4 C-102.72 -128.4, -128.4 -64.2, -128.4 0 C-128.4 64.2, -102.72 128.4, 0 128.4 C102.72 128.4, 128.4 64.2, 128.4 0 C128.4 -64.2, 102.72 -128.4, 0 -128.4 Z" fill="white" opacity="0.9"/>
+    <path d="M0 -77.03999999999999 C-64.2 -77.03999999999999, -77.03999999999999 -38.519999999999996, -77.03999999999999 0 C-77.03999999999999 38.519999999999996, -64.2 77.03999999999999, 0 77.03999999999999 C64.2 77.03999999999999, 77.03999999999999 38.519999999999996, 77.03999999999999 0 C77.03999999999999 -38.519999999999996, 64.2 -77.03999999999999, 0 -77.03999999999999 Z" fill="white"/>
+  </g>
+</svg>
