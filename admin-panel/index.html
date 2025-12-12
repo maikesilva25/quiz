@@ -247,6 +247,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para criar item da loja -->
+    <div id="createItemModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeCreateItemModal()">&times;</span>
+            <h2>🛒 Criar Novo Item</h2>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Nome do Item *</label>
+                    <input type="text" id="itemName" placeholder="Ex: Moldura Dourada" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Descrição *</label>
+                    <textarea id="itemDescription" placeholder="Descreva o item..." rows="3"
+                              style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical;" required></textarea>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Tipo *</label>
+                    <select id="itemType" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="frame">Moldura</option>
+                        <option value="badge">Emblema</option>
+                        <option value="title">Título</option>
+                        <option value="background">Fundo</option>
+                        <option value="effect">Efeito</option>
+                        <option value="other">Outro</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Preço (moedas) *</label>
+                    <input type="number" id="itemPrice" min="1" value="100" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Raridade *</label>
+                    <select id="itemRarity" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                        <option value="common">Comum</option>
+                        <option value="uncommon">Incomum</option>
+                        <option value="rare">Raro</option>
+                        <option value="epic">Épico</option>
+                        <option value="legendary">Lendário</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">URL da Imagem</label>
+                    <input type="url" id="itemImageUrl" placeholder="https://exemplo.com/imagem.png" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+                    <small style="color: #666;">Opcional - URL da imagem do item</small>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="itemAvailable" checked style="width: 20px; height: 20px;">
+                        <span>Item disponível para compra</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Quantidade em Estoque</label>
+                    <input type="number" id="itemStock" min="0" value="0" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+                    <small style="color: #666;">0 = ilimitado</small>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmCreateItemBtn" class="btn btn-success" style="flex: 1;">Criar Item</button>
+                <button onclick="closeCreateItemModal()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 
