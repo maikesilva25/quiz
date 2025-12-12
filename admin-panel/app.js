@@ -347,34 +347,142 @@ function createRequestCard(id, data) {
 
 // Aprovar solicitação
 window.approveRequest = async function(requestId) {
-  if (!confirm('Deseja aprovar esta solicitação?')) return;
+  if (!confirm('Deseja aprovar esta solicitação e criar a conta do usuário?')) return;
   
   try {
     const dbInstance = window.db;
-    if (!dbInstance) {
+    const authInstance = window.auth;
+    
+    if (!dbInstance || !authInstance) {
       alert('Erro: Firebase não está disponível');
       return;
     }
+    
     const requestDoc = await dbInstance.collection('accountRequests').doc(requestId).get();
     const requestData = requestDoc.data();
     
+    if (!requestData) {
+      alert('Erro: Solicitação não encontrada');
+      return;
+    }
+    
+    // Verificar se o email já existe
+    try {
+      const signInMethods = await authInstance.fetchSignInMethodsForEmail(requestData.email);
+      if (signInMethods && signInMethods.length > 0) {
+        alert('Erro: Já existe uma conta com este email');
+        return;
+      }
+    } catch (emailCheckError) {
+      // Se der erro ao verificar, continua (pode ser que o email não exista)
+      console.log('Verificação de email:', emailCheckError);
+    }
+    
+    // Salvar UID do admin atual (antes de criar novo usuário)
+    const adminUid = currentUser.uid;
+    
     // Criar senha temporária
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase() + '123';
     
-    // Nota: Para criar usuários via web, você precisa usar Firebase Admin SDK em uma Cloud Function
-    // Por enquanto, apenas atualizar o status e armazenar a senha temporária
-    await dbInstance.collection('accountRequests').doc(requestId).update({
-      status: 'approved',
-      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      processedBy: currentUser.uid,
-      tempPassword: tempPassword,
-    });
-    
-    alert(`Solicitação aprovada!\n\nSenha temporária: ${tempPassword}\n\nIMPORTANTE: Você precisa criar o usuário manualmente no Firebase Console ou usar uma Cloud Function para criar automaticamente.`);
-    loadRequests();
+    // Criar usuário no Firebase Authentication
+    let newUser;
+    try {
+      const userCredential = await authInstance.createUserWithEmailAndPassword(
+        requestData.email,
+        tempPassword
+      );
+      newUser = userCredential.user;
+      
+      // Atualizar perfil do usuário
+      await newUser.updateProfile({
+        displayName: requestData.name
+      });
+      
+      // Criar documento do usuário no Firestore
+      await dbInstance.collection('users').doc(newUser.uid).set({
+        name: requestData.name,
+        email: requestData.email,
+        phoneNumber: requestData.phoneNumber || null,
+        dateOfBirth: requestData.dateOfBirth || null,
+        verified: false,
+        blocked: false,
+        needsPasswordChange: true,
+        isAdmin: false,
+        coins: 0,
+        titles: [],
+        purchasedItems: [],
+        activeFrame: null,
+        activeTheme: null,
+        adFreeUntil: null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      
+      // Atualizar status da solicitação (usando o UID do admin salvo)
+      await dbInstance.collection('accountRequests').doc(requestId).update({
+        status: 'approved',
+        processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        processedBy: adminUid,
+        createdUserId: newUser.uid,
+        tempPassword: tempPassword,
+      });
+      
+      // Fazer logout do novo usuário criado
+      // Nota: O Firebase automaticamente faz login com o novo usuário ao criá-lo
+      // Por isso precisamos fazer logout e o admin precisará fazer login novamente
+      await authInstance.signOut();
+      
+      // Mostrar mensagem e redirecionar para login
+      alert(`✅ Conta criada com sucesso!\n\n` +
+            `Usuário: ${requestData.name}\n` +
+            `Email: ${requestData.email}\n` +
+            `Senha temporária: ${tempPassword}\n\n` +
+            `⚠️ Você será redirecionado para fazer login novamente.`);
+      
+      // Redirecionar para login após um breve delay
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 2000);
+      
+      return; // Não continuar com o resto do código
+      
+      alert(`✅ Solicitação aprovada com sucesso!\n\n` +
+            `Conta criada para: ${requestData.name}\n` +
+            `Email: ${requestData.email}\n` +
+            `Senha temporária: ${tempPassword}\n\n` +
+            `⚠️ IMPORTANTE: O usuário precisará trocar a senha no primeiro login.`);
+      
+      loadRequests();
+    } catch (createError) {
+      console.error('Erro ao criar usuário:', createError);
+      
+      // Se o erro for porque o email já existe, apenas atualizar o status
+      if (createError.code === 'auth/email-already-in-use') {
+        alert('Aviso: Já existe uma conta com este email. A solicitação foi marcada como aprovada, mas nenhuma nova conta foi criada.');
+        await dbInstance.collection('accountRequests').doc(requestId).update({
+          status: 'approved',
+          processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          processedBy: currentUser.uid,
+        });
+        loadRequests();
+      } else {
+        throw createError;
+      }
+    }
   } catch (error) {
     console.error('Erro ao aprovar solicitação:', error);
-    alert('Erro ao aprovar solicitação: ' + error.message);
+    let errorMessage = 'Erro ao aprovar solicitação';
+    
+    if (error.code === 'auth/email-already-in-use') {
+      errorMessage = 'Já existe uma conta com este email';
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Email inválido';
+    } else if (error.code === 'auth/weak-password') {
+      errorMessage = 'Senha muito fraca';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    alert('Erro ao aprovar solicitação: ' + errorMessage);
   }
 };
 
@@ -651,13 +759,6 @@ async function confirmAddCoins() {
   }
 }
 
-// Fechar modal ao clicar fora
-window.onclick = function(event) {
-  const coinsModal = document.getElementById('coinsModal');
-  if (event.target === coinsModal) {
-    closeCoinsModal();
-  }
-};
 
 // ==================== DASHBOARD ====================
 async function loadDashboard() {
@@ -1097,7 +1198,107 @@ function createShopItemCard(id, data) {
 }
 
 window.showCreateItemModal = function() {
-  alert('Funcionalidade de criar item será implementada. Por enquanto, crie diretamente no Firestore.');
+  // Limpar formulário
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemDescription').value = '';
+  document.getElementById('itemType').value = '';
+  document.getElementById('itemPrice').value = '100';
+  document.getElementById('itemRarity').value = 'common';
+  document.getElementById('itemImageUrl').value = '';
+  document.getElementById('itemAvailable').checked = true;
+  document.getElementById('itemStock').value = '0';
+  
+  // Mostrar modal
+  const modal = document.getElementById('createItemModal');
+  modal.style.display = 'block';
+  
+  // Event listener para criar item
+  document.getElementById('confirmCreateItemBtn').onclick = createShopItem;
+};
+
+window.closeCreateItemModal = function() {
+  document.getElementById('createItemModal').style.display = 'none';
+};
+
+async function createShopItem() {
+  const name = document.getElementById('itemName').value.trim();
+  const description = document.getElementById('itemDescription').value.trim();
+  const type = document.getElementById('itemType').value;
+  const price = parseInt(document.getElementById('itemPrice').value);
+  const rarity = document.getElementById('itemRarity').value;
+  const imageUrl = document.getElementById('itemImageUrl').value.trim();
+  const available = document.getElementById('itemAvailable').checked;
+  const stock = parseInt(document.getElementById('itemStock').value) || 0;
+  
+  // Validação
+  if (!name || !description || !type || !price || price < 1) {
+    alert('Preencha todos os campos obrigatórios (Nome, Descrição, Tipo e Preço)');
+    return;
+  }
+  
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    // Criar item no Firestore
+    const itemData = {
+      name: name,
+      description: description,
+      type: type,
+      price: price,
+      rarity: rarity,
+      available: available,
+      stock: stock,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: currentUser.uid,
+      createdByEmail: currentUser.email
+    };
+    
+    // Adicionar URL da imagem se fornecida
+    if (imageUrl) {
+      itemData.imageUrl = imageUrl;
+    }
+    
+    await dbInstance.collection('shopItems').add(itemData);
+    
+    // Log da ação
+    await dbInstance.collection('adminLogs').add({
+      action: 'Item da loja criado',
+      adminEmail: currentUser.email,
+      details: `Item: ${name}, Tipo: ${type}, Preço: ${price} moedas`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert('✅ Item criado com sucesso!');
+    closeCreateItemModal();
+    loadShop();
+  } catch (error) {
+    console.error('Erro ao criar item:', error);
+    alert('Erro ao criar item: ' + error.message);
+  }
+}
+
+// Fechar modal ao clicar fora (já existe uma função window.onclick, vamos atualizar)
+const originalOnClick = window.onclick;
+window.onclick = function(event) {
+  // Chamar função original se existir
+  if (originalOnClick && typeof originalOnClick === 'function') {
+    originalOnClick(event);
+  }
+  
+  // Fechar modais ao clicar fora
+  const coinsModal = document.getElementById('coinsModal');
+  const createItemModal = document.getElementById('createItemModal');
+  
+  if (event.target === coinsModal) {
+    closeCoinsModal();
+  }
+  if (event.target === createItemModal) {
+    closeCreateItemModal();
+  }
 };
 
 window.editShopItem = function(id) {
