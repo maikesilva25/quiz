@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,42 +29,62 @@ export const UploadScreen: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPedidoOracao, setIsPedidoOracao] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Verificar se user e userData estão disponíveis
+  useEffect(() => {
+    if (user && userData) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [user, userData]);
 
   const pickVideo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar seus vídeos');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar seus vídeos');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 1,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setVideoUri(result.assets[0].uri);
-      setType('video');
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setVideoUri(result.assets[0].uri);
+        setType('video');
+      }
+    } catch (error: any) {
+      console.error('Erro ao selecionar vídeo:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar o vídeo. Tente novamente.');
     }
   };
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar suas fotos');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar suas fotos');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-      setType('photo');
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setPhotoUri(result.assets[0].uri);
+        setType('photo');
+      }
+    } catch (error: any) {
+      console.error('Erro ao selecionar foto:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar a foto. Tente novamente.');
     }
   };
 
@@ -135,6 +155,16 @@ export const UploadScreen: React.FC = () => {
 
   const styles = createStyles(colors);
 
+  // Se ainda estiver carregando ou não tiver user/userData, mostrar loading
+  if (loading || !user || !userData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 10, color: colors.text }}>Carregando...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.typeSelector}>
@@ -170,6 +200,12 @@ export const UploadScreen: React.FC = () => {
             style={styles.videoPreview}
             useNativeControls
             resizeMode="contain"
+            isMuted={true}
+            onError={(error) => {
+              console.error('Erro ao carregar vídeo:', error);
+              Alert.alert('Erro', 'Não foi possível carregar o vídeo. Tente novamente.');
+              setVideoUri(null);
+            }}
           />
           <TouchableOpacity
             style={styles.removeMedia}
