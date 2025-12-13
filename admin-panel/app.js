@@ -1,6 +1,22 @@
 // Firebase já inicializado em config.js
 let currentUser = null;
 let currentTab = 'dashboard';
+let isCreatingUser = false; // Flag para evitar verificação de admin durante criação de usuário
+
+// Função para obter senha do admin (armazenada temporariamente na sessão)
+function getAdminPassword() {
+  return sessionStorage.getItem('adminPassword');
+}
+
+// Função para salvar senha do admin temporariamente
+function saveAdminPassword(password) {
+  sessionStorage.setItem('adminPassword', password);
+}
+
+// Função para limpar senha do admin
+function clearAdminPassword() {
+  sessionStorage.removeItem('adminPassword');
+}
 
 // Função para aguardar Firebase carregar
 function waitForFirebase(callback, maxAttempts = 50, attempt = 0) {
@@ -29,9 +45,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (emailEl) {
           emailEl.textContent = user.email;
         }
-        checkAdminStatus();
+        
+        // Só verificar admin se não estiver no processo de criar usuário
+        if (!isCreatingUser) {
+          checkAdminStatus();
+        }
       } else {
-        window.location.href = 'login.html';
+        // Só redirecionar se não estiver criando usuário
+        if (!isCreatingUser) {
+          window.location.href = 'login.html';
+        }
       }
     });
     
@@ -60,6 +83,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
+        // Limpar senha salva ao fazer logout
+        clearAdminPassword();
         authInstance.signOut();
       });
     }
@@ -508,6 +533,25 @@ window.approveRequest = async function(requestId) {
       return;
     }
     
+    // Obter senha do admin (da sessão ou pedir)
+    let adminPassword = getAdminPassword();
+    
+    if (!adminPassword) {
+      // Se não tiver senha salva, pedir ao usuário
+      adminPassword = prompt('Digite sua senha de administrador:\n\n(Será salva temporariamente nesta sessão para não precisar digitar novamente)');
+      
+      if (!adminPassword) {
+        alert('Operação cancelada. A senha é necessária para manter você logado após criar a conta.');
+        return;
+      }
+      
+      // Salvar senha na sessão
+      saveAdminPassword(adminPassword);
+    }
+    
+    // Ativar flag para evitar verificação de admin durante criação
+    isCreatingUser = true;
+    
     // Criar senha temporária (8 dígitos numéricos)
     const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
     
@@ -552,13 +596,48 @@ window.approveRequest = async function(requestId) {
       tempPassword: tempPassword,
     });
     
-    // Fazer logout do novo usuário e fazer login novamente como admin
+    // Fazer logout do novo usuário criado imediatamente
     await authInstance.signOut();
     
-    // Tentar fazer login novamente como admin usando email
-    // Nota: Isso requer que o admin tenha a senha salva ou use outro método
-    // Por enquanto, vamos apenas mostrar o modal e redirecionar
-    showPasswordModal(requestData.name, requestData.email, tempPassword);
+    // Pequeno delay para garantir que o logout foi processado
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Fazer login novamente como admin
+    try {
+      await authInstance.signInWithEmailAndPassword(adminEmail, adminPassword);
+      console.log('✅ Login como admin restaurado com sucesso');
+      
+      // Desativar flag após login bem-sucedido
+      isCreatingUser = false;
+      
+      // Atualizar currentUser
+      currentUser = authInstance.currentUser;
+      
+      // Verificar admin novamente para garantir acesso
+      await checkAdminStatus();
+      
+      // Mostrar modal com a senha (sem logout, pois já estamos logados como admin)
+      showPasswordModal(requestData.name, requestData.email, tempPassword, null, false);
+      
+      // Recarregar solicitações
+      loadRequests();
+    } catch (loginError) {
+      console.error('Erro ao fazer login novamente como admin:', loginError);
+      
+      // Desativar flag em caso de erro
+      isCreatingUser = false;
+      
+      alert('⚠️ Conta criada com sucesso, mas não foi possível fazer login novamente como admin.\n\n' +
+            'Erro: ' + loginError.message + '\n\n' +
+            'Você será redirecionado para fazer login manualmente.');
+      
+      // Mostrar modal antes de redirecionar (com logout)
+      showPasswordModal(requestData.name, requestData.email, tempPassword, null, true);
+      
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 3000);
+    }
     
   } catch (error) {
     console.error('Erro ao aprovar solicitação:', error);
@@ -1660,7 +1739,7 @@ window.saveSettings = async function() {
 // Modal de senha
 let pendingLogout = false;
 
-window.showPasswordModal = function(name, email, password, message = null) {
+window.showPasswordModal = function(name, email, password, message = null, shouldLogout = true) {
   document.getElementById('passwordUserName').textContent = name;
   document.getElementById('passwordUserEmail').textContent = email;
   
@@ -1669,14 +1748,14 @@ window.showPasswordModal = function(name, email, password, message = null) {
   const modalTitle = document.querySelector('#passwordModal h2');
   const warningDiv = document.querySelector('#passwordModal .warning-important');
   
-  if (password) {
-    passwordDisplay.value = password;
-    passwordDisplay.style.display = 'block';
-    passwordContainer.style.display = 'block';
-    if (modalTitle) modalTitle.textContent = '✅ Conta Criada com Sucesso!';
-    if (warningDiv) warningDiv.style.display = 'block';
-    document.querySelector('#passwordModal .modal-actions button').textContent = 'OK';
-    pendingLogout = true;
+    if (password) {
+      passwordDisplay.value = password;
+      passwordDisplay.style.display = 'block';
+      passwordContainer.style.display = 'block';
+      if (modalTitle) modalTitle.textContent = '✅ Conta Criada com Sucesso!';
+      if (warningDiv) warningDiv.style.display = 'block';
+      document.querySelector('#passwordModal .modal-actions button').textContent = 'OK';
+      pendingLogout = shouldLogout; // Usar o parâmetro shouldLogout
   } else {
     passwordDisplay.style.display = 'none';
     passwordContainer.style.display = 'none';

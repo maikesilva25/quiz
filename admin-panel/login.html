@@ -71,6 +71,8 @@
                     // Verificação estrita: isAdmin deve ser exatamente true
                     if (userData && userData.isAdmin === true) {
                         console.log('Login - Usuário é admin, redirecionando...');
+                        // Salvar senha temporariamente na sessão para uso posterior
+                        sessionStorage.setItem('adminPassword', password);
                         window.location.href = 'index.html';
                     } else {
                         await authInstance.signOut();
