@@ -508,8 +508,8 @@ window.approveRequest = async function(requestId) {
       return;
     }
     
-    // Criar senha temporária
-    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase() + '123';
+    // Criar senha temporária (8 dígitos numéricos)
+    const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
     
     // Criar usuário no Firebase Authentication
     let newUser;
