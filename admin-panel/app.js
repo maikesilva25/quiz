@@ -223,7 +223,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Verificar se é admin
 async function checkAdminStatus() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    console.log('checkAdminStatus: currentUser não está definido');
+    return;
+  }
   
   try {
     const dbInstance = window.db;
@@ -233,16 +236,88 @@ async function checkAdminStatus() {
       return;
     }
     
+    console.log('Verificando admin para usuário:', currentUser.uid, currentUser.email);
+    
     const userDoc = await dbInstance.collection('users').doc(currentUser.uid).get();
+    
+    if (!userDoc.exists) {
+      console.error('Documento do usuário não encontrado no Firestore');
+      console.log('Tentando criar documento do usuário...');
+      
+      // Tentar criar o documento se não existir (pode acontecer se o usuário foi criado diretamente no Auth)
+      try {
+        await dbInstance.collection('users').doc(currentUser.uid).set({
+          name: currentUser.displayName || currentUser.email?.split('@')[0] || 'Usuário',
+          email: currentUser.email,
+          verified: false,
+          blocked: false,
+          isAdmin: false, // Por padrão não é admin
+          coins: 0,
+          titles: [],
+          purchasedItems: [],
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        
+        // Recarregar o documento
+        const newUserDoc = await dbInstance.collection('users').doc(currentUser.uid).get();
+        const newUserData = newUserDoc.data();
+        
+        if (newUserData && newUserData.isAdmin === true) {
+          console.log('Usuário é admin após criar documento');
+          loadTab('dashboard');
+          return;
+        } else {
+          alert('Erro: Seu perfil foi criado, mas você não tem permissão de administrador.\n\n' +
+                'Entre em contato com outro administrador para conceder permissões.\n\n' +
+                'UID: ' + currentUser.uid);
+          authInstance.signOut();
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 3000);
+          return;
+        }
+      } catch (createError) {
+        console.error('Erro ao criar documento:', createError);
+        alert('Erro: Não foi possível criar seu perfil. Entre em contato com o suporte.\n\n' +
+              'UID: ' + currentUser.uid);
+        authInstance.signOut();
+        return;
+      }
+    }
+    
     const userData = userDoc.data();
-    if (userData && userData.isAdmin) {
+    console.log('Dados do usuário:', userData);
+    console.log('isAdmin:', userData?.isAdmin, 'tipo:', typeof userData?.isAdmin);
+    
+    // Verificar se isAdmin é true (verificação estrita)
+    if (userData && userData.isAdmin === true) {
+      console.log('✅ Usuário é admin, carregando dashboard');
       loadTab('dashboard');
     } else {
-      alert('Acesso negado. Você não é um administrador.');
+      console.warn('❌ Usuário não é admin. isAdmin =', userData?.isAdmin, 'tipo:', typeof userData?.isAdmin);
+      
+      // Mostrar informações úteis para debug
+      const debugInfo = `Email: ${currentUser.email}\n` +
+                       `UID: ${currentUser.uid}\n` +
+                       `isAdmin no Firestore: ${userData?.isAdmin || 'não definido'}\n` +
+                       `Tipo: ${typeof userData?.isAdmin}`;
+      
+      alert('Acesso negado. Você não é um administrador.\n\n' +
+            'Para resolver:\n' +
+            '1. Acesse o Firestore Console\n' +
+            '2. Vá para a coleção "users"\n' +
+            '3. Encontre o documento com ID: ' + currentUser.uid + '\n' +
+            '4. Defina o campo "isAdmin" como "true"\n\n' +
+            'Informações de debug:\n' + debugInfo);
+      
       authInstance.signOut();
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 5000);
     }
   } catch (error) {
     console.error('Erro ao verificar admin:', error);
+    alert('Erro ao verificar permissões de administrador: ' + error.message);
   }
 }
 

@@ -55,12 +55,33 @@
                     
                     // Verificar se é admin
                     const userDoc = await dbInstance.collection('users').doc(user.uid).get();
+                    
+                    if (!userDoc.exists) {
+                        await authInstance.signOut();
+                        errorMsg.innerHTML = 'Erro: Seu perfil não foi encontrado no sistema.<br><br>' +
+                            'Entre em contato com um administrador para criar seu perfil.';
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                    
                     const userData = userDoc.data();
-                    if (userData && userData.isAdmin) {
+                    console.log('Login - Dados do usuário:', userData);
+                    console.log('Login - isAdmin:', userData?.isAdmin, 'tipo:', typeof userData?.isAdmin);
+                    
+                    // Verificação estrita: isAdmin deve ser exatamente true
+                    if (userData && userData.isAdmin === true) {
+                        console.log('Login - Usuário é admin, redirecionando...');
                         window.location.href = 'index.html';
                     } else {
                         await authInstance.signOut();
+                        const debugInfo = `UID: ${user.uid}<br>Email: ${user.email}<br>isAdmin: ${userData?.isAdmin || 'não definido'}`;
                         errorMsg.innerHTML = 'Acesso negado. Você não é um administrador.<br><br>' +
+                            '<strong>Para resolver:</strong><br>' +
+                            '1. Acesse o Firestore Console<br>' +
+                            '2. Vá para a coleção "users"<br>' +
+                            '3. Encontre o documento com ID: ' + user.uid + '<br>' +
+                            '4. Defina o campo "isAdmin" como "true" (boolean)<br><br>' +
+                            '<small>' + debugInfo + '</small><br><br>' +
                             '<a href="make-admin.html" style="color: #007AFF; text-decoration: underline;">' +
                             'Clique aqui para marcar um usuário como admin</a>';
                         errorMsg.style.display = 'block';
