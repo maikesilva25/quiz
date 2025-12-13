@@ -182,8 +182,8 @@ const MainApp: React.FC = () => {
     return <CustomSplashScreen />;
   }
 
-  // Verificar modo de manutenção
-  if (maintenanceMode && user) {
+  // Verificar modo de manutenção (permitir acesso apenas para admins)
+  if (maintenanceMode && user && userData && !userData.isAdmin) {
     return (
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <MaintenanceScreen />
