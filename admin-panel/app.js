@@ -357,6 +357,12 @@ function createRequestCard(id, data) {
       <span class="status-badge ${statusClass}">${statusText}</span>
     </div>
     <div class="item-text"><strong>Email:</strong> ${data.email}</div>
+    ${status === 'approved' && data.tempPassword ? `
+      <div class="item-text" style="background: #e8f5e9; padding: 8px; border-radius: 4px; margin: 8px 0;">
+        <strong>Senha Temporária:</strong> <span style="font-family: monospace; font-weight: bold; color: #2e7d32;">${data.tempPassword}</span>
+        <button class="btn btn-primary" onclick="copyToClipboard('${data.tempPassword}')" style="margin-left: 8px; padding: 4px 8px; font-size: 12px;">📋 Copiar</button>
+      </div>
+    ` : ''}
     <div class="item-text"><strong>Data de Nascimento:</strong> ${data.dateOfBirth}</div>
     ${data.phoneNumber ? `<div class="item-text"><strong>WhatsApp:</strong> ${data.phoneNumber}</div>` : ''}
     <div class="item-text"><strong>Data:</strong> ${data.createdAt?.toDate().toLocaleString('pt-BR')}</div>
@@ -392,99 +398,93 @@ window.approveRequest = async function(requestId) {
       return;
     }
     
+    // Salvar credenciais do admin antes de criar novo usuário
+    const adminUid = currentUser.uid;
+    const adminEmail = currentUser.email;
+    
     // Verificar se o email já existe
+    let emailExists = false;
     try {
       const signInMethods = await authInstance.fetchSignInMethodsForEmail(requestData.email);
       if (signInMethods && signInMethods.length > 0) {
-        alert('Erro: Já existe uma conta com este email');
-        return;
+        emailExists = true;
       }
     } catch (emailCheckError) {
       // Se der erro ao verificar, continua (pode ser que o email não exista)
       console.log('Verificação de email:', emailCheckError);
     }
     
-    // Salvar UID do admin atual (antes de criar novo usuário)
-    const adminUid = currentUser.uid;
+    if (emailExists) {
+      // Se já existe, apenas atualizar status e mostrar aviso
+      await dbInstance.collection('accountRequests').doc(requestId).update({
+        status: 'approved',
+        processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        processedBy: adminUid,
+        note: 'Conta já existia - nenhuma nova conta foi criada',
+      });
+      
+      showPasswordModal(
+        requestData.name, 
+        requestData.email, 
+        null, 
+        'Já existe uma conta com este email. A solicitação foi marcada como aprovada, mas nenhuma nova conta foi criada.'
+      );
+      loadRequests();
+      return;
+    }
     
     // Criar senha temporária
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase() + '123';
     
     // Criar usuário no Firebase Authentication
     let newUser;
-    try {
-      const userCredential = await authInstance.createUserWithEmailAndPassword(
-        requestData.email,
-        tempPassword
-      );
-      newUser = userCredential.user;
-      
-      // Atualizar perfil do usuário
-      await newUser.updateProfile({
-        displayName: requestData.name
-      });
-      
-      // Criar documento do usuário no Firestore
-      await dbInstance.collection('users').doc(newUser.uid).set({
-        name: requestData.name,
-        email: requestData.email,
-        phoneNumber: requestData.phoneNumber || null,
-        dateOfBirth: requestData.dateOfBirth || null,
-        verified: false,
-        blocked: false,
-        needsPasswordChange: true,
-        isAdmin: false,
-        coins: 0,
-        titles: [],
-        purchasedItems: [],
-        activeFrame: null,
-        activeTheme: null,
-        adFreeUntil: null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      
-      // Atualizar status da solicitação (usando o UID do admin salvo)
-      await dbInstance.collection('accountRequests').doc(requestId).update({
-        status: 'approved',
-        processedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        processedBy: adminUid,
-        createdUserId: newUser.uid,
-        tempPassword: tempPassword,
-      });
-      
-      // Mostrar modal com a senha antes de fazer logout
-      showPasswordModal(requestData.name, requestData.email, tempPassword);
-      
-      // Fazer logout do novo usuário criado
-      // Nota: O Firebase automaticamente faz login com o novo usuário ao criá-lo
-      // Por isso precisamos fazer logout e o admin precisará fazer login novamente
-      // Mas vamos fazer isso após o usuário fechar o modal
-      
-      return; // Não continuar com o resto do código
-      
-      alert(`✅ Solicitação aprovada com sucesso!\n\n` +
-            `Conta criada para: ${requestData.name}\n` +
-            `Email: ${requestData.email}\n` +
-            `Senha temporária: ${tempPassword}\n\n` +
-            `⚠️ IMPORTANTE: O usuário precisará trocar a senha no primeiro login.`);
-      
-      loadRequests();
-    } catch (createError) {
-      console.error('Erro ao criar usuário:', createError);
-      
-      // Se o erro for porque o email já existe, apenas atualizar o status
-      if (createError.code === 'auth/email-already-in-use') {
-        alert('Aviso: Já existe uma conta com este email. A solicitação foi marcada como aprovada, mas nenhuma nova conta foi criada.');
-        await dbInstance.collection('accountRequests').doc(requestId).update({
-          status: 'approved',
-          processedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          processedBy: currentUser.uid,
-        });
-        loadRequests();
-      } else {
-        throw createError;
-      }
-    }
+    const userCredential = await authInstance.createUserWithEmailAndPassword(
+      requestData.email,
+      tempPassword
+    );
+    newUser = userCredential.user;
+    
+    // Atualizar perfil do usuário
+    await newUser.updateProfile({
+      displayName: requestData.name
+    });
+    
+    // Criar documento do usuário no Firestore
+    await dbInstance.collection('users').doc(newUser.uid).set({
+      name: requestData.name,
+      email: requestData.email,
+      phoneNumber: requestData.phoneNumber || null,
+      dateOfBirth: requestData.dateOfBirth || null,
+      verified: false,
+      blocked: false,
+      needsPasswordChange: true,
+      isAdmin: false,
+      coins: 0,
+      titles: [],
+      purchasedItems: [],
+      activeFrame: null,
+      activeTheme: null,
+      adFreeUntil: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    // Atualizar status da solicitação (usando o UID do admin salvo)
+    await dbInstance.collection('accountRequests').doc(requestId).update({
+      status: 'approved',
+      processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      processedBy: adminUid,
+      createdUserId: newUser.uid,
+      tempPassword: tempPassword,
+    });
+    
+    // Fazer logout do novo usuário e fazer login novamente como admin
+    await authInstance.signOut();
+    
+    // Tentar fazer login novamente como admin usando email
+    // Nota: Isso requer que o admin tenha a senha salva ou use outro método
+    // Por enquanto, vamos apenas mostrar o modal e redirecionar
+    showPasswordModal(requestData.name, requestData.email, tempPassword);
+    
   } catch (error) {
     console.error('Erro ao aprovar solicitação:', error);
     let errorMessage = 'Erro ao aprovar solicitação';
@@ -1585,16 +1585,60 @@ window.saveSettings = async function() {
 // Modal de senha
 let pendingLogout = false;
 
-window.showPasswordModal = function(name, email, password) {
+window.showPasswordModal = function(name, email, password, message = null) {
   document.getElementById('passwordUserName').textContent = name;
   document.getElementById('passwordUserEmail').textContent = email;
-  document.getElementById('passwordDisplay').value = password;
+  
+  const passwordDisplay = document.getElementById('passwordDisplay');
+  const passwordContainer = passwordDisplay.closest('div');
+  const modalTitle = document.querySelector('#passwordModal h2');
+  const warningDiv = document.querySelector('#passwordModal .warning-important');
+  
+  if (password) {
+    passwordDisplay.value = password;
+    passwordDisplay.style.display = 'block';
+    passwordContainer.style.display = 'block';
+    if (modalTitle) modalTitle.textContent = '✅ Conta Criada com Sucesso!';
+    if (warningDiv) warningDiv.style.display = 'block';
+    document.querySelector('#passwordModal .modal-actions button').textContent = 'OK';
+    pendingLogout = true;
+  } else {
+    passwordDisplay.style.display = 'none';
+    passwordContainer.style.display = 'none';
+    if (modalTitle) modalTitle.textContent = 'ℹ️ Informação da Solicitação';
+    if (warningDiv) warningDiv.style.display = 'none';
+    document.querySelector('#passwordModal .modal-actions button').textContent = 'Fechar';
+    pendingLogout = false;
+    
+    // Mostrar mensagem se fornecida
+    if (message) {
+      let messageDiv = passwordContainer.parentElement.querySelector('.warning-message');
+      if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.className = 'warning-message';
+        passwordContainer.parentElement.insertBefore(messageDiv, passwordContainer);
+      }
+      messageDiv.style.padding = '12px';
+      messageDiv.style.background = '#fff3cd';
+      messageDiv.style.borderLeft = '4px solid #ffc107';
+      messageDiv.style.borderRadius = '4px';
+      messageDiv.style.marginBottom = '16px';
+      messageDiv.innerHTML = `<strong>⚠️ Aviso:</strong> ${message}`;
+      messageDiv.style.display = 'block';
+    }
+  }
+  
   document.getElementById('passwordModal').style.display = 'block';
-  pendingLogout = true;
 };
 
 window.closePasswordModal = async function() {
   document.getElementById('passwordModal').style.display = 'none';
+  
+  // Remover mensagem de aviso se existir
+  const warningMessage = document.querySelector('.warning-message');
+  if (warningMessage) {
+    warningMessage.remove();
+  }
   
   if (pendingLogout) {
     pendingLogout = false;
@@ -1611,23 +1655,39 @@ window.closePasswordModal = async function() {
 
 window.copyPassword = function() {
   const passwordInput = document.getElementById('passwordDisplay');
-  passwordInput.select();
-  document.execCommand('copy');
-  
-  // Feedback visual
-  const btn = document.querySelector('#passwordModal button.btn-primary');
-  if (btn) {
-    const originalText = btn.textContent;
-    btn.textContent = '✅ Copiado!';
-    btn.style.backgroundColor = '#4CAF50';
+  if (passwordInput && passwordInput.value) {
+    passwordInput.select();
+    document.execCommand('copy');
     
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.style.backgroundColor = '';
-    }, 2000);
+    // Feedback visual
+    const btn = document.querySelector('#passwordModal button.btn-primary');
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = '✅ Copiado!';
+      btn.style.backgroundColor = '#4CAF50';
+      
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.backgroundColor = '';
+      }, 2000);
+    }
+    
+    // Também mostrar alerta
+    alert('Senha copiada para a área de transferência!');
   }
+};
+
+// Função para copiar texto para clipboard (usado nos cards)
+window.copyToClipboard = function(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
   
-  // Também mostrar alerta
   alert('Senha copiada para a área de transferência!');
 };
 
