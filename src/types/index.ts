@@ -1,3 +1,29 @@
+// Tags de oração disponíveis
+export type OracaoTag = 
+  | 'Gratidão'
+  | 'Pedido'
+  | 'Louvor'
+  | 'Adoração'
+  | 'Intercessão'
+  | 'Ação de Graças'
+  | 'Reflexão'
+  | 'Testemunho'
+  | 'Versículo'
+  | 'Motivação';
+
+export const ORACAO_TAGS: OracaoTag[] = [
+  'Gratidão',
+  'Pedido',
+  'Louvor',
+  'Adoração',
+  'Intercessão',
+  'Ação de Graças',
+  'Reflexão',
+  'Testemunho',
+  'Versículo',
+  'Motivação',
+];
+
 // ... existing code ...
 
 export interface StudyRoom {

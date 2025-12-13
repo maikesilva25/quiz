@@ -242,7 +242,7 @@ export const UploadScreen: React.FC = () => {
       <View style={styles.tagsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Tags (opcional)</Text>
         <View style={styles.tagsContainer}>
-          {ORACAO_TAGS.map((tag) => (
+          {ORACAO_TAGS && ORACAO_TAGS.length > 0 ? ORACAO_TAGS.map((tag) => (
             <TouchableOpacity
               key={tag}
               style={[
@@ -260,7 +260,11 @@ export const UploadScreen: React.FC = () => {
                 {tag}
               </Text>
             </TouchableOpacity>
-          ))}
+          )) : (
+            <Text style={[styles.tagText, { color: colors.textSecondary }]}>
+              Nenhuma tag disponível
+            </Text>
+          )}
         </View>
       </View>
 
