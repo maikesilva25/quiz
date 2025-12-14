@@ -292,7 +292,20 @@ const MainApp: React.FC = () => {
               </View>
             }
           >
-            <UploadScreen />
+            {(() => {
+              try {
+                return <UploadScreen />;
+              } catch (error: any) {
+                console.error('Erro ao renderizar UploadScreen:', error);
+                return (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, textAlign: 'center' }}>
+                      Erro: {error?.message || 'Erro desconhecido'}
+                    </Text>
+                  </View>
+                );
+              }
+            })()}
           </ErrorBoundary>
         )}
         {currentScreen === 'profile' && (

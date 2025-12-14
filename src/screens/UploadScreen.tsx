@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Video as ExpoVideo } from 'expo-av';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadVideo, uploadPhoto, uploadText } from '../services/oracaoService';
@@ -242,26 +241,16 @@ export const UploadScreen: React.FC = () => {
 
       {videoUri && videoUri.trim() !== '' && (
         <View style={styles.mediaPreview}>
-          <ExpoVideo
-            source={{ uri: videoUri }}
-            style={styles.videoPreview}
-            useNativeControls
-            resizeMode="contain"
-            isMuted={true}
-            shouldPlay={false}
-            onError={(error) => {
-              console.error('Erro ao carregar vídeo:', error);
-              Alert.alert('Erro', 'Não foi possível carregar o vídeo. Tente novamente.');
-              setVideoUri(null);
-              setType('text');
-            }}
-            onLoadStart={() => {
-              console.log('Iniciando carregamento do vídeo');
-            }}
-            onLoad={() => {
-              console.log('Vídeo carregado com sucesso');
-            }}
-          />
+          <View style={[styles.videoPreview, { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface }]}>
+            <Ionicons name="videocam" size={48} color={colors.primary} />
+            <Text style={{ color: colors.text, marginTop: 8, fontWeight: '600' }}>Vídeo selecionado</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4, textAlign: 'center', paddingHorizontal: 16 }}>
+              {videoUri.split('/').pop() || 'Vídeo'}
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 8 }}>
+              O vídeo será processado ao publicar
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.removeMedia}
             onPress={() => {
