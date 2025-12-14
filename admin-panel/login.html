@@ -5,39 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Painel Administrativo</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
 </head>
-<body>
-    <div class="container" style="max-width: 400px; margin-top: 100px;">
-        <div class="item-card">
-            <h2 style="text-align: center; margin-bottom: 20px;">Login Administrativo</h2>
-            <form id="loginForm">
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 8px;">Email</label>
-                    <input type="email" id="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">🛡️</div>
+                <h1>Painel Administrativo</h1>
+                <p>Faça login para acessar o painel</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">
+                        <span class="label-icon">📧</span>
+                        Email
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        required 
+                        placeholder="seu@email.com"
+                        autocomplete="email"
+                    >
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px;">Senha</label>
-                    <input type="password" id="password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                
+                <div class="form-group">
+                    <label for="password">
+                        <span class="label-icon">🔒</span>
+                        Senha
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        required 
+                        placeholder="••••••••"
+                        autocomplete="current-password"
+                    >
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
+                
+                <button type="submit" class="login-btn" id="loginButton">
+                    <span class="btn-text">Entrar</span>
+                    <span class="btn-loader" style="display: none;">⏳</span>
+                </button>
             </form>
-            <div id="errorMsg" style="color: #FF3B30; margin-top: 16px; text-align: center; display: none;"></div>
+            
+            <div id="errorMsg" class="error-message" style="display: none;"></div>
+        </div>
+        
+        <div class="login-footer">
+            <p>Sistema de Gerenciamento - Orações</p>
         </div>
     </div>
 
     <script>
         // Aguardar o Firebase carregar
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            const loginForm = document.getElementById('loginForm');
+            const loginButton = document.getElementById('loginButton');
+            const btnText = loginButton.querySelector('.btn-text');
+            const btnLoader = loginButton.querySelector('.btn-loader');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-                const errorMsg = document.getElementById('errorMsg');
+                
+                // Esconder erro anterior
+                errorMsg.style.display = 'none';
+                
+                // Mostrar loading
+                loginButton.disabled = true;
+                btnText.style.display = 'none';
+                btnLoader.style.display = 'inline-block';
                 
                 // Verificar se auth está disponível
                 const authInstance = window.auth || auth;
@@ -46,6 +93,9 @@
                 if (typeof authInstance === 'undefined' || typeof dbInstance === 'undefined') {
                     errorMsg.textContent = 'Erro: Firebase não carregou corretamente. Recarregue a página.';
                     errorMsg.style.display = 'block';
+                    loginButton.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoader.style.display = 'none';
                     return;
                 }
                 
@@ -61,6 +111,9 @@
                         errorMsg.innerHTML = 'Erro: Seu perfil não foi encontrado no sistema.<br><br>' +
                             'Entre em contato com um administrador para criar seu perfil.';
                         errorMsg.style.display = 'block';
+                        loginButton.disabled = false;
+                        btnText.style.display = 'inline';
+                        btnLoader.style.display = 'none';
                         return;
                     }
                     
@@ -73,7 +126,16 @@
                         console.log('Login - Usuário é admin, redirecionando...');
                         // Salvar senha temporariamente na sessão para uso posterior
                         sessionStorage.setItem('adminPassword', password);
-                        window.location.href = 'index.html';
+                        
+                        // Feedback visual de sucesso
+                        btnText.textContent = '✓ Entrando...';
+                        btnText.style.display = 'inline';
+                        btnLoader.style.display = 'none';
+                        
+                        // Redirecionar após pequeno delay
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 500);
                     } else {
                         await authInstance.signOut();
                         const debugInfo = `UID: ${user.uid}<br>Email: ${user.email}<br>isAdmin: ${userData?.isAdmin || 'não definido'}`;
@@ -84,13 +146,35 @@
                             '3. Encontre o documento com ID: ' + user.uid + '<br>' +
                             '4. Defina o campo "isAdmin" como "true" (boolean)<br><br>' +
                             '<small>' + debugInfo + '</small><br><br>' +
-                            '<a href="make-admin.html" style="color: #007AFF; text-decoration: underline;">' +
+                            '<a href="make-admin.html">' +
                             'Clique aqui para marcar um usuário como admin</a>';
                         errorMsg.style.display = 'block';
+                        loginButton.disabled = false;
+                        btnText.textContent = 'Entrar';
+                        btnText.style.display = 'inline';
+                        btnLoader.style.display = 'none';
                     }
                 } catch (error) {
-                    errorMsg.textContent = 'Erro ao fazer login: ' + error.message;
+                    let errorMessage = 'Erro ao fazer login: ';
+                    
+                    if (error.code === 'auth/user-not-found') {
+                        errorMessage = 'Email não encontrado. Verifique o email e tente novamente.';
+                    } else if (error.code === 'auth/wrong-password') {
+                        errorMessage = 'Senha incorreta. Tente novamente.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'Email inválido. Verifique o formato do email.';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMessage = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    errorMsg.textContent = errorMessage;
                     errorMsg.style.display = 'block';
+                    loginButton.disabled = false;
+                    btnText.textContent = 'Entrar';
+                    btnText.style.display = 'inline';
+                    btnLoader.style.display = 'none';
                 }
             });
         });
