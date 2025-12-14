@@ -3,12 +3,16 @@
     "name": "Orações",
     "slug": "nossoApp",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "updates": {
-      "enabled": false
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/570ce43d-c739-4747-a8a5-0d8e9d52720f"
     },
     "splash": {
       "image": "./assets/splash-icon.png",
