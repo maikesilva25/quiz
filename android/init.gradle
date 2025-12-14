@@ -1,0 +1,19 @@
+// Script de inicialização do Gradle para garantir que react-native.config.js existe
+def reactNativeConfigFile = new File(rootProject.projectDir.parentFile, 'react-native.config.js')
+if (!reactNativeConfigFile.exists()) {
+    def configContent = '''const path = require('path');
+
+module.exports = {
+  project: {
+    android: {
+      sourceDir: path.join(__dirname, 'android'),
+      appName: 'app',
+      packageName: 'com.nossoapp.oracoes',
+    },
+  },
+};
+'''
+    reactNativeConfigFile.write(configContent)
+    println("Created react-native.config.js")
+}
+

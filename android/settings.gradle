@@ -1,3 +1,21 @@
+// Garantir que react-native.config.js existe antes de qualquer coisa
+def reactNativeConfigFile = new File(rootDir.parentFile, 'react-native.config.js')
+if (!reactNativeConfigFile.exists()) {
+    def configContent = '''const path = require('path');
+
+module.exports = {
+  project: {
+    android: {
+      sourceDir: path.join(__dirname, 'android'),
+      appName: 'app',
+      packageName: 'com.nossoapp.oracoes',
+    },
+  },
+};
+'''
+    reactNativeConfigFile.write(configContent)
+}
+
 pluginManagement {
   def reactNativeGradlePlugin = new File(
     providers.exec {
@@ -23,9 +41,6 @@ plugins {
 }
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
-  // Configurar packageName antes do autolinking
-  ex.project.android.packageName = 'com.nossoapp.oracoes'
-  
   if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
     ex.autolinkLibrariesFromCommand()
   } else {
