@@ -43,7 +43,13 @@
       }
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-updates",
+        {
+          "username": "maike25"
+        }
+      ]
     ]
   }
 }
