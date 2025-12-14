@@ -478,6 +478,25 @@ const MainApp: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={[createStyles(colors).navButton, currentScreen === 'bible' && createStyles(colors).navButtonActive]}
+          onPress={() => setCurrentScreen('bible')}
+        >
+          <Ionicons
+            name={currentScreen === 'bible' ? 'book' : 'book-outline'}
+            size={24}
+            color={currentScreen === 'bible' ? colors.primary : colors.textSecondary}
+          />
+          <Text
+            style={[
+              createStyles(colors).navLabel,
+              { color: currentScreen === 'bible' ? colors.primary : colors.textSecondary },
+            ]}
+          >
+            Bíblia
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[createStyles(colors).navButton, currentScreen === 'chatsList' && createStyles(colors).navButtonActive]}
           onPress={() => setCurrentScreen('chatsList')}
         >
