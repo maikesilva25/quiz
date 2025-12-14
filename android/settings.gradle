@@ -26,8 +26,13 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
     ex.autolinkLibrariesFromCommand()
   } else {
-    ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
+    // Usar comando customizado que inclui packageName
+    def rnConfigCommand = expoAutolinking.rnConfigCommand
+    ex.autolinkLibrariesFromCommand(rnConfigCommand)
   }
+  
+  // Garantir que o packageName está disponível
+  ex.project.android.packageName = 'com.nossoapp.oracoes'
 }
 expoAutolinking.useExpoModules()
 
