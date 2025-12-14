@@ -1,0 +1,103 @@
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import Constants from 'expo-constants';
+import { Linking, Alert } from 'react-native';
+
+export interface AppUpdateInfo {
+  version: string;
+  versionCode: number;
+  downloadUrl: string;
+  releaseNotes?: string;
+  mandatory: boolean;
+  releaseDate: string;
+}
+
+/**
+ * Obtém a versão atual do app
+ */
+export const getCurrentVersion = (): string => {
+  return Constants.expoConfig?.version || '1.0.0';
+};
+
+/**
+ * Obtém informações sobre atualizações disponíveis do Firebase
+ */
+export const checkForUpdates = async (): Promise<AppUpdateInfo | null> => {
+  try {
+    const updateDocRef = doc(db, 'app_updates', 'latest');
+    const updateDoc = await getDoc(updateDocRef);
+
+    if (!updateDoc.exists()) {
+      return null;
+    }
+
+    const updateData = updateDoc.data() as AppUpdateInfo;
+    const currentVersion = getCurrentVersion();
+
+    // Compara versões (formato: "1.0.0")
+    if (isNewerVersion(updateData.version, currentVersion)) {
+      return updateData;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Erro ao verificar atualizações:', error);
+    return null;
+  }
+};
+
+/**
+ * Compara duas versões no formato "x.y.z"
+ * Retorna true se a versão1 é mais nova que versão2
+ */
+const isNewerVersion = (version1: string, version2: string): boolean => {
+  const v1Parts = version1.split('.').map(Number);
+  const v2Parts = version2.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+    const v1Part = v1Parts[i] || 0;
+    const v2Part = v2Parts[i] || 0;
+
+    if (v1Part > v2Part) return true;
+    if (v1Part < v2Part) return false;
+  }
+
+  return false;
+};
+
+/**
+ * Abre o link de download do APK
+ */
+export const downloadUpdate = async (downloadUrl: string): Promise<void> => {
+  try {
+    const supported = await Linking.canOpenURL(downloadUrl);
+    if (supported) {
+      await Linking.openURL(downloadUrl);
+    } else {
+      Alert.alert(
+        'Erro',
+        'Não foi possível abrir o link de download. Verifique sua conexão com a internet.'
+      );
+    }
+  } catch (error) {
+    console.error('Erro ao abrir link de download:', error);
+    Alert.alert('Erro', 'Não foi possível abrir o link de download.');
+  }
+};
+
+/**
+ * Formata a data de lançamento para exibição
+ */
+export const formatReleaseDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return dateString;
+  }
+};
+

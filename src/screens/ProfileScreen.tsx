@@ -27,7 +27,7 @@ import { getUserPurchasedItems, applyFrame, removeFrame } from '../services/user
 import { ShopItem } from '../types';
 import { getUnreadCount, subscribeToNotifications } from '../services/notificationsService';
 import { Notification } from '../types';
-// UpdateService removido - Expo Go não suporta OTA updates
+import { checkForUpdates, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
 
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
@@ -49,6 +49,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const [loadingItems, setLoadingItems] = useState(false);
   const [showItemsModal, setShowItemsModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -216,6 +219,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       Alert.alert('Sucesso!', 'Frame removido!');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível remover o frame');
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      const update = await checkForUpdates();
+      if (update) {
+        setUpdateInfo(update);
+        setShowUpdateModal(true);
+      } else {
+        Alert.alert(
+          'Atualização',
+          `Você está usando a versão mais recente (${getCurrentVersion()}).`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao verificar atualizações:', error);
+      Alert.alert('Erro', 'Não foi possível verificar atualizações. Tente novamente mais tarde.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (!updateInfo) return;
+    try {
+      await downloadUpdate(updateInfo.downloadUrl);
+      setShowUpdateModal(false);
+    } catch (error) {
+      console.error('Erro ao baixar atualização:', error);
     }
   };
 
@@ -399,6 +434,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
             ))
           )}
         </View>
+
+        <View style={styles.statsSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>⚙️ Configurações</Text>
+          
+          <TouchableOpacity
+            style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleCheckForUpdates}
+            disabled={checkingUpdate}
+          >
+            <View style={styles.settingsButtonContent}>
+              <Ionicons name="refresh-outline" size={24} color={colors.primary} />
+              <View style={styles.settingsButtonText}>
+                <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                  Buscar Atualizações
+                </Text>
+                <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                  Versão atual: {getCurrentVersion()}
+                </Text>
+              </View>
+            </View>
+            {checkingUpdate ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
 
@@ -490,6 +552,105 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         </View>
       </View>
     </Modal>
+
+      {/* Modal de Atualização */}
+      <Modal
+        visible={showUpdateModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <View style={styles.updateHeaderContent}>
+                <Ionicons name="cloud-download-outline" size={28} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: colors.text, marginLeft: 12 }]}>
+                  Atualização Disponível
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowUpdateModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {updateInfo && (
+                <View style={styles.updateContent}>
+                  <View style={[styles.updateVersionCard, { backgroundColor: colors.primary + '20' }]}>
+                    <Text style={[styles.updateVersionLabel, { color: colors.textSecondary }]}>
+                      Versão Atual
+                    </Text>
+                    <Text style={[styles.updateVersionText, { color: colors.text }]}>
+                      {getCurrentVersion()}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.updateArrow}>
+                    <Ionicons name="arrow-down" size={24} color={colors.primary} />
+                  </View>
+
+                  <View style={[styles.updateVersionCard, { backgroundColor: colors.primary + '20' }]}>
+                    <Text style={[styles.updateVersionLabel, { color: colors.textSecondary }]}>
+                      Nova Versão
+                    </Text>
+                    <Text style={[styles.updateVersionText, { color: colors.primary, fontWeight: 'bold' }]}>
+                      {updateInfo.version}
+                    </Text>
+                  </View>
+
+                  {updateInfo.releaseDate && (
+                    <View style={styles.updateDateContainer}>
+                      <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[styles.updateDateText, { color: colors.textSecondary }]}>
+                        Lançada em {formatReleaseDate(updateInfo.releaseDate)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {updateInfo.releaseNotes && (
+                    <View style={styles.updateNotesContainer}>
+                      <Text style={[styles.updateNotesTitle, { color: colors.text }]}>
+                        O que há de novo:
+                      </Text>
+                      <Text style={[styles.updateNotesText, { color: colors.textSecondary }]}>
+                        {updateInfo.releaseNotes}
+                      </Text>
+                    </View>
+                  )}
+
+                  {updateInfo.mandatory && (
+                    <View style={[styles.mandatoryBadge, { backgroundColor: colors.error + '20' }]}>
+                      <Ionicons name="alert-circle" size={16} color={colors.error} />
+                      <Text style={[styles.mandatoryText, { color: colors.error }]}>
+                        Atualização obrigatória
+                      </Text>
+                    </View>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.downloadButton, { backgroundColor: colors.primary }]}
+                    onPress={handleDownloadUpdate}
+                  >
+                    <Ionicons name="download-outline" size={20} color="#fff" />
+                    <Text style={styles.downloadButtonText}>Baixar Atualização</Text>
+                  </TouchableOpacity>
+
+                  {!updateInfo.mandatory && (
+                    <TouchableOpacity
+                      style={[styles.cancelButton, { borderColor: colors.border }]}
+                      onPress={() => setShowUpdateModal(false)}
+                    >
+                      <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
+                        Depois
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
     </ScrollView>
   );
@@ -826,6 +987,118 @@ const createStyles = (colors: any) =>
     },
     applyButtonText: {
       color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    settingsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      marginBottom: 12,
+    },
+    settingsButtonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    settingsButtonText: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    settingsButtonTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    settingsButtonSubtitle: {
+      fontSize: 12,
+      marginTop: 2,
+    },
+    updateHeaderContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    updateContent: {
+      paddingVertical: 20,
+    },
+    updateVersionCard: {
+      padding: 20,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    updateVersionLabel: {
+      fontSize: 12,
+      marginBottom: 8,
+    },
+    updateVersionText: {
+      fontSize: 24,
+      fontWeight: '600',
+    },
+    updateArrow: {
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    updateDateContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 16,
+      gap: 6,
+    },
+    updateDateText: {
+      fontSize: 12,
+    },
+    updateNotesContainer: {
+      marginTop: 24,
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+    },
+    updateNotesTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    updateNotesText: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    mandatoryBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 8,
+      marginTop: 16,
+      gap: 8,
+    },
+    mandatoryText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    downloadButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      borderRadius: 12,
+      marginTop: 24,
+      gap: 8,
+    },
+    downloadButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    cancelButton: {
+      padding: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      marginTop: 12,
+      alignItems: 'center',
+    },
+    cancelButtonText: {
       fontSize: 14,
       fontWeight: '600',
     },
