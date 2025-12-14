@@ -45,7 +45,7 @@ export const uploadVideo = async (
   await uploadBytes(videoRef, blob);
   const videoURL = await getDownloadURL(videoRef);
   
-  const oracaoData = {
+  const oracaoData: any = {
     userId,
     userName,
     userPhotoURL: userPhotoURL || null,
@@ -57,10 +57,14 @@ export const uploadVideo = async (
     favorites: [],
     tags: tags || [],
     isPedidoOracao: isPedidoOracao || false,
-    prayingUsers: isPedidoOracao ? [] : undefined,
     views: 0,
     createdAt: Timestamp.now(),
   };
+  
+  // Adicionar prayingUsers apenas se for pedido de oração
+  if (isPedidoOracao) {
+    oracaoData.prayingUsers = [];
+  }
   
   const docRef = await addDoc(collection(db, 'oracoes'), oracaoData);
   return docRef.id;
@@ -92,7 +96,7 @@ export const uploadPhoto = async (
   await uploadBytes(photoRef, blob);
   const photoURL = await getDownloadURL(photoRef);
   
-  const oracaoData = {
+  const oracaoData: any = {
     userId,
     userName,
     userPhotoURL: userPhotoURL || null,
@@ -104,10 +108,14 @@ export const uploadPhoto = async (
     favorites: [],
     tags: tags || [],
     isPedidoOracao: isPedidoOracao || false,
-    prayingUsers: isPedidoOracao ? [] : undefined,
     views: 0,
     createdAt: Timestamp.now(),
   };
+  
+  // Adicionar prayingUsers apenas se for pedido de oração
+  if (isPedidoOracao) {
+    oracaoData.prayingUsers = [];
+  }
   
   const docRef = await addDoc(collection(db, 'oracoes'), oracaoData);
   return docRef.id;
@@ -132,7 +140,7 @@ export const uploadText = async (
     throw new Error('Apenas usuários verificados podem postar orações');
   }
   
-  const oracaoData = {
+  const oracaoData: any = {
     userId,
     userName,
     userPhotoURL: userPhotoURL || null,
@@ -143,10 +151,14 @@ export const uploadText = async (
     favorites: [],
     tags: tags || [],
     isPedidoOracao: isPedidoOracao || false,
-    prayingUsers: isPedidoOracao ? [] : undefined,
     views: 0,
     createdAt: Timestamp.now(),
   };
+  
+  // Adicionar prayingUsers apenas se for pedido de oração
+  if (isPedidoOracao) {
+    oracaoData.prayingUsers = [];
+  }
   
   const docRef = await addDoc(collection(db, 'oracoes'), oracaoData);
   return docRef.id;

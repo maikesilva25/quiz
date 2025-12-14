@@ -128,38 +128,57 @@ export const UploadScreen: React.FC = () => {
       return;
     }
 
-    if (!content.trim() && type === 'text') {
+    // Determinar o tipo correto baseado no que está disponível
+    let finalType = type;
+    if (type === 'video' && !videoUri) {
+      finalType = 'text';
+    } else if (type === 'photo' && !photoUri) {
+      finalType = 'text';
+    }
+
+    // Validação: se for texto, precisa ter conteúdo
+    if (finalType === 'text' && !content.trim()) {
       Alert.alert('Erro', 'Digite o conteúdo da oração');
       return;
     }
 
-    if (type === 'video' && !videoUri) {
+    // Validação: se for vídeo, precisa ter videoUri
+    if (finalType === 'video' && !videoUri) {
       Alert.alert('Erro', 'Selecione um vídeo');
       return;
     }
 
-    if (type === 'photo' && !photoUri) {
+    // Validação: se for foto, precisa ter photoUri
+    if (finalType === 'photo' && !photoUri) {
       Alert.alert('Erro', 'Selecione uma foto');
       return;
     }
 
     setUploading(true);
     try {
-      if (type === 'video' && videoUri) {
+      console.log('Iniciando upload:', { type: finalType, hasContent: !!content.trim(), hasVideo: !!videoUri, hasPhoto: !!photoUri });
+      
+      if (finalType === 'video' && videoUri) {
+        console.log('Fazendo upload de vídeo...');
         await uploadVideo(user.uid, userData.name, userData.photoURL, videoUri, content, selectedTags, isPedidoOracao);
-      } else if (type === 'photo' && photoUri) {
+      } else if (finalType === 'photo' && photoUri) {
+        console.log('Fazendo upload de foto...');
         await uploadPhoto(user.uid, userData.name, userData.photoURL, photoUri, content, selectedTags, isPedidoOracao);
       } else {
+        console.log('Fazendo upload de texto...');
         await uploadText(user.uid, userData.name, userData.photoURL, content, selectedTags, isPedidoOracao);
       }
 
+      console.log('Upload concluído com sucesso!');
       Alert.alert('Sucesso', 'Oração publicada com sucesso!');
       setContent('');
       setVideoUri(null);
       setPhotoUri(null);
+      setType('text');
       setSelectedTags([]);
       setIsPedidoOracao(false);
     } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
       Alert.alert('Erro', error.message || 'Erro ao publicar oração');
     } finally {
       setUploading(false);
