@@ -18,7 +18,7 @@
         "EXPO_USE_COMMUNITY_AUTOLINKING": "0"
       },
       "channel": "preview",
-      "prebuildCommand": "npx expo prebuild --clean --platform android"
+      "prebuildCommand": "npx expo prebuild --clean --platform android && node -e \"const fs=require('fs');const config='module.exports={project:{android:{packageName:\\'com.nossoapp.oracoes\\'}}};';fs.writeFileSync('react-native.config.js',config);\""
     },
     "production": {
       "android": {
