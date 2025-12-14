@@ -24,6 +24,32 @@ export const ORACAO_TAGS: OracaoTag[] = [
   'Motivação',
 ];
 
+export interface Oracao {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhotoURL?: string;
+  type: 'text' | 'photo' | 'video';
+  content: string;
+  videoURL?: string;
+  photoURL?: string;
+  likes: string[];
+  comments: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    userPhotoURL?: string;
+    text: string;
+    createdAt: Date;
+  }>;
+  favorites: string[];
+  tags: string[];
+  isPedidoOracao: boolean;
+  prayingUsers?: string[];
+  views: number;
+  createdAt: Date;
+}
+
 // ... existing code ...
 
 export interface StudyRoom {

@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoPlayer } from './VideoPlayer';
@@ -22,6 +24,8 @@ import {
   addComment,
   incrementOracaoView,
   togglePraying,
+  updateOracao,
+  deleteOracao,
 } from '../services/oracaoService';
 import { getUniqueImageUrl } from '../utils/imageUtils';
 
@@ -48,6 +52,12 @@ export const OracaoCard: React.FC<OracaoCardProps> = ({
   const [prayingUsersCount, setPrayingUsersCount] = useState(oracao.prayingUsers?.length || 0);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editContent, setEditContent] = useState(oracao.content);
+  const [editTags, setEditTags] = useState<string[]>(oracao.tags || []);
+  const [editIsPedidoOracao, setEditIsPedidoOracao] = useState(oracao.isPedidoOracao || false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (oracao.prayingUsers) {
@@ -119,6 +129,63 @@ export const OracaoCard: React.FC<OracaoCardProps> = ({
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Excluir Oração',
+      'Tem certeza que deseja excluir esta oração? Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await deleteOracao(oracao.id, currentUserId);
+              Alert.alert('Sucesso', 'Oração excluída com sucesso');
+              onUpdate?.();
+            } catch (error: any) {
+              Alert.alert('Erro', error.message || 'Não foi possível excluir a oração');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEdit = async () => {
+    if (!editContent.trim() && oracao.type === 'text') {
+      Alert.alert('Erro', 'Digite o conteúdo da oração');
+      return;
+    }
+
+    setIsEditing(true);
+    try {
+      await updateOracao(oracao.id, currentUserId, {
+        content: editContent,
+        tags: editTags,
+        isPedidoOracao: editIsPedidoOracao,
+      });
+      Alert.alert('Sucesso', 'Oração atualizada com sucesso');
+      setShowEditModal(false);
+      onUpdate?.();
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Não foi possível editar a oração');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const toggleEditTag = (tag: string) => {
+    if (editTags.includes(tag)) {
+      setEditTags(editTags.filter(t => t !== tag));
+    } else {
+      setEditTags([...editTags, tag]);
+    }
+  };
+
   const getTagEmoji = (tag: string) => {
     const emojiMap: { [key: string]: string } = {
       'Gratidão': '🙏',
@@ -168,6 +235,29 @@ export const OracaoCard: React.FC<OracaoCardProps> = ({
             </Text>
           </View>
         </TouchableOpacity>
+        
+        {oracao.userId === currentUserId && (
+          <View style={styles.ownerActions}>
+            <TouchableOpacity
+              style={styles.ownerButton}
+              onPress={() => {
+                setEditContent(oracao.content);
+                setEditTags(oracao.tags || []);
+                setEditIsPedidoOracao(oracao.isPedidoOracao || false);
+                setShowEditModal(true);
+              }}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.ownerButton}
+              onPress={handleDelete}
+              disabled={isDeleting}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {oracao.tags && oracao.tags.length > 0 && (
@@ -294,6 +384,101 @@ export const OracaoCard: React.FC<OracaoCardProps> = ({
           </View>
         </View>
       )}
+
+      {/* Modal de Edição */}
+      <Modal
+        visible={showEditModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Oração</Text>
+              <TouchableOpacity
+                onPress={() => setShowEditModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <TextInput
+                style={[styles.editInput, { color: colors.text, borderColor: colors.border }]}
+                placeholder="Conteúdo da oração..."
+                placeholderTextColor={colors.textSecondary}
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                editable={oracao.type === 'text'}
+              />
+
+              <View style={styles.editTagsSection}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Tags</Text>
+                <View style={styles.tagsContainer}>
+                  {ORACAO_TAGS.map((tag) => (
+                    <TouchableOpacity
+                      key={tag}
+                      style={[
+                        styles.tag,
+                        editTags.includes(tag) && { backgroundColor: colors.primary + '20' },
+                      ]}
+                      onPress={() => toggleEditTag(tag)}
+                    >
+                      <Text
+                        style={[
+                          styles.tagText,
+                          { color: editTags.includes(tag) ? colors.primary : colors.text },
+                        ]}
+                      >
+                        {tag}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.checkbox, { borderColor: colors.border }]}
+                onPress={() => setEditIsPedidoOracao(!editIsPedidoOracao)}
+              >
+                <Ionicons
+                  name={editIsPedidoOracao ? 'checkbox' : 'checkbox-outline'}
+                  size={24}
+                  color={editIsPedidoOracao ? colors.primary : colors.textSecondary}
+                />
+                <Text style={[styles.checkboxText, { color: colors.text }]}>
+                  Marcar como Pedido de Oração
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.border }]}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleEdit}
+                disabled={isEditing}
+              >
+                {isEditing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -477,6 +662,89 @@ const createStyles = (colors: any) =>
       borderRadius: 20,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    ownerActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    ownerButton: {
+      padding: 8,
+      borderRadius: 8,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      width: '90%',
+      maxHeight: '80%',
+      borderRadius: 16,
+      padding: 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    modalCloseButton: {
+      padding: 4,
+    },
+    modalBody: {
+      maxHeight: 400,
+    },
+    editInput: {
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 16,
+      minHeight: 120,
+      marginBottom: 16,
+    },
+    editTagsSection: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 12,
+    },
+    checkbox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      marginBottom: 20,
+      gap: 12,
+    },
+    checkboxText: {
+      fontSize: 14,
+      flex: 1,
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginTop: 20,
+    },
+    modalButton: {
+      flex: 1,
+      height: 50,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 
