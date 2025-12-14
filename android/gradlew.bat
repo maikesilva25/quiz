@@ -39,9 +39,9 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
 @rem Find java.exe
-@rem Try to use JAVA_HOME from environment, otherwise use default Eclipse Adoptium JDK 17
+@rem Try to use JAVA_HOME from environment, otherwise use default Microsoft JDK 17
 if not defined JAVA_HOME (
-    set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot
+    set JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot
 )
 
 if defined JAVA_HOME goto findJavaFromJavaHome
