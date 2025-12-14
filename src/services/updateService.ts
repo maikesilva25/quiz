@@ -21,19 +21,65 @@ export const getCurrentVersion = (): string => {
 };
 
 /**
+ * Obtém informações detalhadas sobre atualizações OTA
+ */
+export const getOTAUpdateInfo = async (): Promise<{
+  isEnabled: boolean;
+  isAvailable: boolean;
+  currentlyRunning: string | null;
+  availableUpdate: string | null;
+  error?: string;
+}> => {
+  try {
+    const isEnabled = Updates.isEnabled;
+    const currentlyRunning = Updates.updateId || null;
+    
+    if (!isEnabled) {
+      return {
+        isEnabled: false,
+        isAvailable: false,
+        currentlyRunning,
+        availableUpdate: null,
+        error: 'Updates não está habilitado (pode estar em modo desenvolvimento)',
+      };
+    }
+
+    const update = await Updates.checkForUpdateAsync();
+    const availableUpdate = update.manifest?.id || null;
+    
+    console.log('Informações OTA:', {
+      isEnabled,
+      isAvailable: update.isAvailable,
+      currentlyRunning,
+      availableUpdate,
+      manifest: update.manifest,
+    });
+
+    return {
+      isEnabled: true,
+      isAvailable: update.isAvailable,
+      currentlyRunning,
+      availableUpdate,
+    };
+  } catch (error: any) {
+    console.error('Erro ao verificar atualização OTA:', error);
+    return {
+      isEnabled: Updates.isEnabled,
+      isAvailable: false,
+      currentlyRunning: Updates.updateId || null,
+      availableUpdate: null,
+      error: error?.message || 'Erro desconhecido',
+    };
+  }
+};
+
+/**
  * Verifica atualizações OTA via Expo Updates
  */
 export const checkOTAUpdate = async (): Promise<boolean> => {
   try {
-    // Verifica se Updates está habilitado
-    if (!Updates.isEnabled) {
-      console.log('Updates não está habilitado');
-      return false;
-    }
-
-    const update = await Updates.checkForUpdateAsync();
-    console.log('Verificação OTA:', { isAvailable: update.isAvailable, manifest: update.manifest?.id });
-    return update.isAvailable;
+    const info = await getOTAUpdateInfo();
+    return info.isAvailable;
   } catch (error) {
     console.error('Erro ao verificar atualização OTA:', error);
     return false;

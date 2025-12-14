@@ -72,24 +72,40 @@ const MainApp: React.FC = () => {
     async function prepare() {
       try {
         // Verificar atualizações OTA
+        console.log('Verificando atualizações OTA...', {
+          isEnabled: Updates.isEnabled,
+          updateId: Updates.updateId,
+          channel: Updates.channel,
+        });
+
         if (Updates.isEnabled) {
           try {
             const update = await Updates.checkForUpdateAsync();
+            console.log('Resultado da verificação OTA:', {
+              isAvailable: update.isAvailable,
+              manifest: update.manifest?.id,
+              createdAt: update.manifest?.createdAt,
+            });
+
             if (update.isAvailable) {
               console.log('Atualização OTA disponível, baixando...');
-              await Updates.fetchUpdateAsync();
-              console.log('Atualização baixada, recarregando app...');
+              const fetchResult = await Updates.fetchUpdateAsync();
+              console.log('Atualização baixada:', {
+                isNew: fetchResult.isNew,
+                manifest: fetchResult.manifest?.id,
+              });
+              console.log('Recarregando app com nova atualização...');
               // Recarregar o app com a nova atualização
               await Updates.reloadAsync();
               return; // Não continua se houver atualização
             } else {
-              console.log('Nenhuma atualização OTA disponível');
+              console.log('Nenhuma atualização OTA disponível. Versão atual:', Updates.updateId);
             }
           } catch (error) {
             console.warn('Erro ao verificar atualizações OTA:', error);
           }
         } else {
-          console.log('Updates não está habilitado (modo desenvolvimento)');
+          console.log('Updates não está habilitado. Modo:', __DEV__ ? 'desenvolvimento' : 'produção');
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {

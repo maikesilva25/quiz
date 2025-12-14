@@ -27,7 +27,7 @@ import { getUserPurchasedItems, applyFrame, removeFrame } from '../services/user
 import { ShopItem } from '../types';
 import { getUnreadCount, subscribeToNotifications } from '../services/notificationsService';
 import { Notification } from '../types';
-import { checkForUpdates, checkOTAUpdate, applyOTAUpdate, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
+import { checkForUpdates, checkOTAUpdate, getOTAUpdateInfo, applyOTAUpdate, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
 
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
@@ -225,13 +225,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const handleCheckForUpdates = async () => {
     setCheckingUpdate(true);
     try {
-      // Primeiro verifica atualização OTA
-      const hasOTAUpdate = await checkOTAUpdate();
+      // Verifica informações detalhadas sobre OTA
+      const otaInfo = await getOTAUpdateInfo();
       
-      if (hasOTAUpdate) {
+      console.log('Status OTA:', otaInfo);
+      
+      if (otaInfo.isAvailable) {
         Alert.alert(
-          'Atualização Disponível',
-          'Uma nova versão está disponível. Deseja atualizar agora?',
+          'Atualização OTA Disponível',
+          `Uma nova atualização está disponível.\n\nVersão atual: ${otaInfo.currentlyRunning || 'N/A'}\nNova versão: ${otaInfo.availableUpdate || 'N/A'}\n\nDeseja atualizar agora?`,
           [
             { text: 'Depois', style: 'cancel' },
             {
@@ -250,17 +252,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         return;
       }
 
-      // Se não houver OTA, verifica atualização manual (APK)
+      // Se não houver OTA, mostra informações e verifica atualização manual (APK)
+      if (!otaInfo.isEnabled) {
+        Alert.alert(
+          'Atualizações OTA',
+          `OTA não está habilitado.\n\n${otaInfo.error || 'Certifique-se de estar usando um build de produção.'}\n\nVerificando atualizações manuais...`,
+          [{ text: 'OK' }]
+        );
+      }
+
+      // Verifica atualização manual (APK)
       const update = await checkForUpdates();
       if (update) {
         setUpdateInfo(update);
         setShowUpdateModal(true);
       } else {
-        Alert.alert(
-          'Atualização',
-          `Você está usando a versão mais recente (${getCurrentVersion()}).`,
-          [{ text: 'OK' }]
-        );
+        const message = otaInfo.isEnabled
+          ? `Você está usando a versão mais recente (${getCurrentVersion()}).\n\nVersão OTA atual: ${otaInfo.currentlyRunning || 'N/A'}`
+          : `Você está usando a versão mais recente (${getCurrentVersion()}).`;
+        
+        Alert.alert('Atualização', message, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Erro ao verificar atualizações:', error);
