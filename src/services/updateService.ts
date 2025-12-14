@@ -2,6 +2,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import Constants from 'expo-constants';
 import { Linking, Alert } from 'react-native';
+import * as Updates from 'expo-updates';
 
 export interface AppUpdateInfo {
   version: string;
@@ -20,7 +21,49 @@ export const getCurrentVersion = (): string => {
 };
 
 /**
- * Obtém informações sobre atualizações disponíveis do Firebase
+ * Verifica atualizações OTA via Expo Updates
+ */
+export const checkOTAUpdate = async (): Promise<boolean> => {
+  try {
+    // OTA não funciona em desenvolvimento
+    if (process.env.NODE_ENV === 'development' || __DEV__) {
+      return false;
+    }
+
+    const update = await Updates.checkForUpdateAsync();
+    return update.isAvailable;
+  } catch (error) {
+    console.error('Erro ao verificar atualização OTA:', error);
+    return false;
+  }
+};
+
+/**
+ * Baixa e aplica atualização OTA
+ */
+export const applyOTAUpdate = async (): Promise<void> => {
+  try {
+    // OTA não funciona em desenvolvimento
+    if (process.env.NODE_ENV === 'development' || __DEV__) {
+      Alert.alert('Aviso', 'Atualizações OTA não estão disponíveis em modo de desenvolvimento.');
+      return;
+    }
+
+    const update = await Updates.checkForUpdateAsync();
+    if (update.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    } else {
+      Alert.alert('Atualização', 'Você já está usando a versão mais recente.');
+    }
+  } catch (error) {
+    console.error('Erro ao aplicar atualização OTA:', error);
+    Alert.alert('Erro', 'Não foi possível aplicar a atualização. Tente novamente mais tarde.');
+  }
+};
+
+/**
+ * Obtém informações sobre atualizações disponíveis do Firebase (APK manual)
  */
 export const checkForUpdates = async (): Promise<AppUpdateInfo | null> => {
   try {

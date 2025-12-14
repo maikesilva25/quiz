@@ -27,7 +27,7 @@ import { getUserPurchasedItems, applyFrame, removeFrame } from '../services/user
 import { ShopItem } from '../types';
 import { getUnreadCount, subscribeToNotifications } from '../services/notificationsService';
 import { Notification } from '../types';
-import { checkForUpdates, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
+import { checkForUpdates, checkOTAUpdate, applyOTAUpdate, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
 
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
@@ -225,6 +225,32 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const handleCheckForUpdates = async () => {
     setCheckingUpdate(true);
     try {
+      // Primeiro verifica atualização OTA
+      const hasOTAUpdate = await checkOTAUpdate();
+      
+      if (hasOTAUpdate) {
+        Alert.alert(
+          'Atualização Disponível',
+          'Uma nova versão está disponível. Deseja atualizar agora?',
+          [
+            { text: 'Depois', style: 'cancel' },
+            {
+              text: 'Atualizar Agora',
+              onPress: async () => {
+                try {
+                  await applyOTAUpdate();
+                } catch (error) {
+                  console.error('Erro ao aplicar atualização OTA:', error);
+                }
+              },
+            },
+          ]
+        );
+        setCheckingUpdate(false);
+        return;
+      }
+
+      // Se não houver OTA, verifica atualização manual (APK)
       const update = await checkForUpdates();
       if (update) {
         setUpdateInfo(update);

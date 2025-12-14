@@ -29,6 +29,7 @@ import type { SystemSettings } from './src/services/settingsService';
 import { subscribeToNotifications } from './src/services/notificationsService';
 import { Notification } from './src/types';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import * as Updates from 'expo-updates';
 
 type Screen = 
   | 'login' 
@@ -68,6 +69,19 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     async function prepare() {
       try {
+        // Verificar atualizações OTA
+        if (!__DEV__) {
+          try {
+            const update = await Updates.checkForUpdateAsync();
+            if (update.isAvailable) {
+              await Updates.fetchUpdateAsync();
+              // Recarregar o app com a nova atualização
+              await Updates.reloadAsync();
+            }
+          } catch (error) {
+            console.warn('Erro ao verificar atualizações OTA:', error);
+          }
+        }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {
         console.warn(e);
