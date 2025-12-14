@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Updates from 'expo-updates';
 import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -73,24 +72,7 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     async function prepare() {
       try {
-        // Verificar atualizações OTA (apenas em produção)
-        if (!__DEV__ && Updates.isEnabled) {
-          try {
-            const update = await Updates.checkForUpdateAsync();
-            if (update.isAvailable) {
-              await Updates.fetchUpdateAsync();
-              // A atualização será aplicada no próximo restart
-              // Você pode adicionar um alerta aqui se quiser
-              console.log('✅ Nova atualização disponível e baixada!');
-              console.log('📦 Versão da atualização:', update.manifest?.id || 'N/A');
-            } else {
-              console.log('✅ App está atualizado!');
-            }
-          } catch (updateError) {
-            console.warn('Erro ao verificar atualizações:', updateError);
-          }
-        }
-        
+        // Aguardar um pouco para garantir que tudo está carregado
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (e) {
         console.warn(e);
