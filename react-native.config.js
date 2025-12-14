@@ -3,9 +3,6 @@ module.exports = {
     android: {
       packageName: 'com.nossoapp.oracoes',
     },
-    ios: {
-      project: './ios/nossoApp.xcworkspace',
-    },
   },
 };
 

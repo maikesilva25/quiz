@@ -16,7 +16,8 @@
       "env": {
         "NODE_ENV": "production"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "prebuildCommand": "npx expo prebuild --clean --platform android"
     },
     "production": {
       "android": {
