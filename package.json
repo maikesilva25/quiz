@@ -15,10 +15,7 @@
     "prebuild": "expo prebuild --clean",
     "build:local:debug": "cd android && gradlew.bat assembleDebug",
     "build:local:release": "cd android && gradlew.bat assembleRelease",
-    "build:auto": "eas build --platform android --profile preview",
-    "update:ota": "node scripts/update-ota.js",
-    "update:ota:preview": "eas update --branch preview",
-    "update:ota:production": "eas update --branch production"
+    "build:auto": "eas build --platform android --profile preview"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
