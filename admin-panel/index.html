@@ -124,9 +124,10 @@
             <!-- Tab: Quiz -->
             <div id="quiz-tab" class="tab-content">
                 <h2>📚 Gerenciamento de Quiz</h2>
-                <div style="margin-bottom: 16px;">
+                <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="showCreateQuestionModal()">+ Nova Pergunta</button>
-                    <button class="btn btn-secondary" onclick="loadQuizResults()">Ver Resultados</button>
+                    <button class="btn btn-secondary" onclick="loadQuizResults()">🏆 Ver Ranking</button>
+                    <button class="btn btn-secondary" onclick="loadQuiz()">📝 Ver Perguntas</button>
                 </div>
                 <div id="quizQuestionsList" class="list-container">
                     <div class="loading">Carregando...</div>
@@ -282,6 +283,59 @@
             </div>
             <div class="modal-actions">
                 <button onclick="closePasswordModal()" class="btn btn-success" style="flex: 1;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para criar/editar pergunta de quiz -->
+    <div id="quizQuestionModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeQuizQuestionModal()">&times;</span>
+            <h2 id="quizModalTitle">📚 Nova Pergunta de Quiz</h2>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Pergunta *</label>
+                    <textarea id="quizQuestion" placeholder="Digite a pergunta..." rows="3"
+                              style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical;" required></textarea>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Opção 1 (Resposta Correta) *</label>
+                    <input type="text" id="quizOption1" placeholder="Primeira opção" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Opção 2 *</label>
+                    <input type="text" id="quizOption2" placeholder="Segunda opção" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Opção 3 *</label>
+                    <input type="text" id="quizOption3" placeholder="Terceira opção" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Opção 4 *</label>
+                    <input type="text" id="quizOption4" placeholder="Quarta opção" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Resposta Correta *</label>
+                    <select id="quizCorrectAnswer" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;" required>
+                        <option value="0">Opção 1</option>
+                        <option value="1">Opção 2</option>
+                        <option value="2">Opção 3</option>
+                        <option value="3">Opção 4</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Referência Bíblica (opcional)</label>
+                    <input type="text" id="quizReference" placeholder="Ex: João 3:16" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmQuizQuestionBtn" class="btn btn-success" style="flex: 1;">Salvar</button>
+                <button onclick="closeQuizQuestionModal()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
             </div>
         </div>
     </div>

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -35,6 +35,9 @@
       "eas": {
         "projectId": "570ce43d-c739-4747-a8a5-0d8e9d52720f"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

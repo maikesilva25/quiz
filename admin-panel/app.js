@@ -743,6 +743,12 @@ function createUserCard(id, data) {
       </label>
       <span>Bloqueado</span>
     </div>
+    <div class="item-actions" style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+      <button class="btn btn-danger" onclick="deleteUser('${id}', '${data.name || 'Usuário'}', '${data.email || ''}')" 
+              style="width: 100%;">
+        🗑️ Excluir Conta
+      </button>
+    </div>
   `;
   
   return card;
@@ -762,6 +768,220 @@ window.toggleUserStatus = async function(userId, field, value) {
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
     alert('Erro ao atualizar usuário');
+  }
+};
+
+// Excluir conta do usuário (Firebase Auth + Firestore)
+window.deleteUser = async function(userId, userName, userEmail) {
+  const confirmMessage = `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\n` +
+    `Você está prestes a excluir permanentemente a conta de:\n` +
+    `Nome: ${userName}\n` +
+    `Email: ${userEmail}\n` +
+    `ID: ${userId}\n\n` +
+    `Isso irá:\n` +
+    `- Remover a conta do Firebase Authentication\n` +
+    `- Remover todos os dados do Firestore\n` +
+    `- Excluir todas as orações do usuário\n` +
+    `- Excluir todos os chats e mensagens\n` +
+    `- Excluir comentários e outras interações\n\n` +
+    `Tem CERTEZA que deseja continuar?`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  // Confirmação dupla
+  if (!confirm('⚠️ ÚLTIMA CONFIRMAÇÃO!\n\nEsta ação NÃO pode ser desfeita!\n\nDeseja realmente excluir esta conta permanentemente?')) {
+    return;
+  }
+  
+  try {
+    const dbInstance = window.db;
+    const authInstance = window.auth;
+    
+    if (!dbInstance || !authInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    // Verificar se não está tentando excluir a si mesmo
+    if (userId === currentUser.uid) {
+      alert('❌ Erro: Você não pode excluir sua própria conta enquanto estiver logado!');
+      return;
+    }
+    
+    // Verificar se é admin (não permitir excluir outros admins)
+    const userDoc = await dbInstance.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+    
+    if (userData && userData.isAdmin === true) {
+      if (!confirm('⚠️ Este usuário é um ADMINISTRADOR!\n\nTem certeza que deseja excluir uma conta de administrador?')) {
+        return;
+      }
+    }
+    
+    // Iniciar processo de exclusão
+    console.log('Iniciando exclusão da conta:', userId);
+    
+    // 1. Excluir orações do usuário
+    console.log('Excluindo orações...');
+    const oracoesSnapshot = await dbInstance.collection('oracoes')
+      .where('userId', '==', userId)
+      .get();
+    
+    const oracoesDeletePromises = oracoesSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(oracoesDeletePromises);
+    console.log(`Excluídas ${oracoesSnapshot.size} orações`);
+    
+    // 2. Excluir mensagens do usuário
+    console.log('Excluindo mensagens...');
+    const messagesSnapshot = await dbInstance.collection('messages')
+      .where('userId', '==', userId)
+      .get();
+    
+    const messagesDeletePromises = messagesSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(messagesDeletePromises);
+    console.log(`Excluídas ${messagesSnapshot.size} mensagens`);
+    
+    // 3. Excluir chats onde o usuário é participante
+    console.log('Excluindo chats...');
+    const chatsSnapshot = await dbInstance.collection('chats').get();
+    const chatsToDelete = [];
+    
+    for (const chatDoc of chatsSnapshot.docs) {
+      const chatData = chatDoc.data();
+      const participants = chatData.participants || [];
+      
+      if (participants.includes(userId)) {
+        // Se for chat individual, excluir completamente
+        if (chatData.type === 'individual') {
+          chatsToDelete.push(chatDoc.ref);
+        } else {
+          // Se for grupo, apenas remover o usuário dos participantes
+          const updatedParticipants = participants.filter(p => p !== userId);
+          await chatDoc.ref.update({
+            participants: updatedParticipants
+          });
+        }
+      }
+    }
+    
+    const chatsDeletePromises = chatsToDelete.map(ref => ref.delete());
+    await Promise.all(chatsDeletePromises);
+    console.log(`Excluídos ${chatsToDelete.length} chats`);
+    
+    // 4. Remover comentários do usuário em orações
+    console.log('Removendo comentários...');
+    const allOracoesSnapshot = await dbInstance.collection('oracoes').get();
+    const updatePromises = [];
+    
+    for (const oracaoDoc of allOracoesSnapshot.docs) {
+      const oracaoData = oracaoDoc.data();
+      if (oracaoData.comments && Array.isArray(oracaoData.comments)) {
+        const filteredComments = oracaoData.comments.filter(
+          comment => comment.userId !== userId
+        );
+        
+        if (filteredComments.length !== oracaoData.comments.length) {
+          updatePromises.push(
+            oracaoDoc.ref.update({ comments: filteredComments })
+          );
+        }
+      }
+      
+      // Remover likes do usuário
+      if (oracaoData.likes && Array.isArray(oracaoData.likes)) {
+        const filteredLikes = oracaoData.likes.filter(like => like !== userId);
+        if (filteredLikes.length !== oracaoData.likes.length) {
+          updatePromises.push(
+            oracaoDoc.ref.update({ likes: filteredLikes })
+          );
+        }
+      }
+    }
+    
+    await Promise.all(updatePromises);
+    console.log('Comentários e likes removidos');
+    
+    // 5. Excluir notificações do usuário
+    console.log('Excluindo notificações...');
+    const notificationsSnapshot = await dbInstance.collection('notifications')
+      .where('userId', '==', userId)
+      .get();
+    
+    const notificationsDeletePromises = notificationsSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(notificationsDeletePromises);
+    console.log(`Excluídas ${notificationsSnapshot.size} notificações`);
+    
+    // 6. Excluir dados relacionados (scores, purchases, etc.)
+    console.log('Excluindo dados relacionados...');
+    const userScoresSnapshot = await dbInstance.collection('userScores')
+      .where('userId', '==', userId)
+      .get();
+    
+    const scoresDeletePromises = userScoresSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(scoresDeletePromises);
+    
+    const purchasesSnapshot = await dbInstance.collection('purchases')
+      .where('userId', '==', userId)
+      .get();
+    
+    const purchasesDeletePromises = purchasesSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(purchasesDeletePromises);
+    
+    // 7. Excluir documento do usuário no Firestore
+    console.log('Excluindo documento do usuário...');
+    await dbInstance.collection('users').doc(userId).delete();
+    
+    // 8. Tentar excluir conta do Firebase Authentication
+    // NOTA: A exclusão do Firebase Authentication requer Admin SDK ou Cloud Function
+    // No frontend, não temos acesso direto. A conta ficará no Auth mas sem dados no Firestore
+    console.log('⚠️ A exclusão do Firebase Authentication requer Admin SDK ou Cloud Function');
+    console.log(`UID para exclusão manual: ${userId}`);
+    console.log(`Email: ${userEmail}`);
+    
+    // Criar um documento temporário com informações para exclusão manual
+    await dbInstance.collection('pendingAuthDeletions').doc(userId).set({
+      userId: userId,
+      email: userEmail,
+      name: userName,
+      deletedBy: currentUser.email,
+      deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      note: 'Conta excluída do Firestore. Pendente exclusão do Firebase Authentication.'
+    });
+    
+    // 9. Registrar ação no log
+    await dbInstance.collection('adminLogs').add({
+      action: 'Conta de usuário excluída',
+      adminEmail: currentUser.email,
+      details: `Usuário excluído: ${userName} (${userEmail}), UID: ${userId}. Dados do Firestore removidos. Auth pendente exclusão manual.`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    const summaryMessage = `✅ Conta excluída do Firestore com sucesso!\n\n` +
+      `📋 Resumo da exclusão:\n` +
+      `• ${oracoesSnapshot.size} orações excluídas\n` +
+      `• ${messagesSnapshot.size} mensagens excluídas\n` +
+      `• ${chatsToDelete.length} chats excluídos\n` +
+      `• ${notificationsSnapshot.size} notificações excluídas\n` +
+      `• Dados do usuário removidos do Firestore\n\n` +
+      `⚠️ IMPORTANTE:\n` +
+      `A conta do Firebase Authentication ainda precisa ser excluída manualmente:\n\n` +
+      `1. Acesse o Console do Firebase\n` +
+      `2. Vá em Authentication > Users\n` +
+      `3. Busque pelo UID: ${userId}\n` +
+      `4. Ou busque pelo email: ${userEmail}\n` +
+      `5. Clique em excluir\n\n` +
+      `Ou configure uma Cloud Function para fazer isso automaticamente.`;
+    
+    alert(summaryMessage);
+    
+    // Recarregar lista de usuários
+    loadUsers();
+    
+  } catch (error) {
+    console.error('Erro ao excluir conta:', error);
+    alert('❌ Erro ao excluir conta: ' + error.message);
   }
 };
 
@@ -1234,26 +1454,152 @@ function createQuizQuestionCard(id, data) {
   const card = document.createElement('div');
   card.className = 'item-card';
   
+  const options = data.options || [];
+  const correctAnswerIndex = data.correctAnswer || 0;
+  const correctAnswerText = options[correctAnswerIndex] || 'N/A';
+  
   card.innerHTML = `
     <div class="item-title">${data.question || 'Pergunta sem título'}</div>
-    <div class="item-text"><strong>Opções:</strong> ${data.options?.join(', ') || 'N/A'}</div>
-    <div class="item-text"><strong>Resposta Correta:</strong> ${data.options?.[data.correctAnswer] || 'N/A'}</div>
-    ${data.reference ? `<div class="item-text"><strong>Referência:</strong> ${data.reference}</div>` : ''}
+    <div style="margin: 12px 0; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+      <div style="margin-bottom: 8px;"><strong>Opções:</strong></div>
+      ${options.map((opt, idx) => `
+        <div style="padding: 6px; margin: 4px 0; border-radius: 4px; ${idx === correctAnswerIndex ? 'background: #e8f5e9; border-left: 3px solid #4CAF50;' : ''}">
+          ${idx + 1}. ${opt} ${idx === correctAnswerIndex ? '✅' : ''}
+        </div>
+      `).join('')}
+    </div>
+    ${data.reference ? `<div class="item-text"><strong>📖 Referência:</strong> ${data.reference}</div>` : ''}
+    <div class="item-text" style="color: #666; font-size: 12px;">
+      <strong>Criado:</strong> ${data.createdAt?.toDate().toLocaleString('pt-BR') || 'N/A'}
+    </div>
     <div class="item-actions">
-      <button class="btn btn-primary" onclick="editQuizQuestion('${id}')">Editar</button>
-      <button class="btn btn-danger" onclick="deleteQuizQuestion('${id}')">Excluir</button>
+      <button class="btn btn-primary" onclick="editQuizQuestion('${id}')">✏️ Editar</button>
+      <button class="btn btn-danger" onclick="deleteQuizQuestion('${id}')">🗑️ Excluir</button>
     </div>
   `;
   
   return card;
 }
 
+let currentEditingQuestionId = null;
+
 window.showCreateQuestionModal = function() {
-  alert('Funcionalidade de criar pergunta será implementada. Por enquanto, crie diretamente no Firestore.');
+  currentEditingQuestionId = null;
+  document.getElementById('quizModalTitle').textContent = '📚 Nova Pergunta de Quiz';
+  document.getElementById('quizQuestion').value = '';
+  document.getElementById('quizOption1').value = '';
+  document.getElementById('quizOption2').value = '';
+  document.getElementById('quizOption3').value = '';
+  document.getElementById('quizOption4').value = '';
+  document.getElementById('quizCorrectAnswer').value = '0';
+  document.getElementById('quizReference').value = '';
+  document.getElementById('quizQuestionModal').style.display = 'block';
+  
+  // Configurar botão de salvar
+  const confirmBtn = document.getElementById('confirmQuizQuestionBtn');
+  confirmBtn.textContent = 'Criar Pergunta';
+  confirmBtn.onclick = saveQuizQuestion;
 };
 
-window.editQuizQuestion = function(id) {
-  alert('Funcionalidade de editar pergunta será implementada.');
+window.editQuizQuestion = async function(id) {
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    const questionDoc = await dbInstance.collection('quizQuestions').doc(id).get();
+    if (!questionDoc.exists) {
+      alert('Pergunta não encontrada');
+      return;
+    }
+    
+    const data = questionDoc.data();
+    currentEditingQuestionId = id;
+    
+    document.getElementById('quizModalTitle').textContent = '✏️ Editar Pergunta de Quiz';
+    document.getElementById('quizQuestion').value = data.question || '';
+    document.getElementById('quizOption1').value = data.options?.[0] || '';
+    document.getElementById('quizOption2').value = data.options?.[1] || '';
+    document.getElementById('quizOption3').value = data.options?.[2] || '';
+    document.getElementById('quizOption4').value = data.options?.[3] || '';
+    document.getElementById('quizCorrectAnswer').value = data.correctAnswer?.toString() || '0';
+    document.getElementById('quizReference').value = data.reference || '';
+    document.getElementById('quizQuestionModal').style.display = 'block';
+    
+    // Configurar botão de salvar
+    const confirmBtn = document.getElementById('confirmQuizQuestionBtn');
+    confirmBtn.textContent = 'Salvar Alterações';
+    confirmBtn.onclick = saveQuizQuestion;
+  } catch (error) {
+    console.error('Erro ao carregar pergunta:', error);
+    alert('Erro ao carregar pergunta para edição');
+  }
+};
+
+window.closeQuizQuestionModal = function() {
+  document.getElementById('quizQuestionModal').style.display = 'none';
+  currentEditingQuestionId = null;
+};
+
+window.saveQuizQuestion = async function() {
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    const question = document.getElementById('quizQuestion').value.trim();
+    const option1 = document.getElementById('quizOption1').value.trim();
+    const option2 = document.getElementById('quizOption2').value.trim();
+    const option3 = document.getElementById('quizOption3').value.trim();
+    const option4 = document.getElementById('quizOption4').value.trim();
+    const correctAnswer = parseInt(document.getElementById('quizCorrectAnswer').value);
+    const reference = document.getElementById('quizReference').value.trim();
+    
+    // Validações
+    if (!question) {
+      alert('Digite a pergunta');
+      return;
+    }
+    
+    if (!option1 || !option2 || !option3 || !option4) {
+      alert('Preencha todas as 4 opções');
+      return;
+    }
+    
+    if (isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
+      alert('Selecione uma resposta correta válida');
+      return;
+    }
+    
+    const questionData = {
+      question,
+      options: [option1, option2, option3, option4],
+      correctAnswer,
+      reference: reference || null,
+      createdAt: currentEditingQuestionId ? undefined : firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    
+    if (currentEditingQuestionId) {
+      // Editar pergunta existente
+      await dbInstance.collection('quizQuestions').doc(currentEditingQuestionId).update(questionData);
+      alert('Pergunta atualizada com sucesso!');
+    } else {
+      // Criar nova pergunta
+      await dbInstance.collection('quizQuestions').add(questionData);
+      alert('Pergunta criada com sucesso!');
+    }
+    
+    closeQuizQuestionModal();
+    loadQuiz();
+  } catch (error) {
+    console.error('Erro ao salvar pergunta:', error);
+    alert('Erro ao salvar pergunta: ' + error.message);
+  }
 };
 
 window.deleteQuizQuestion = async function(id) {
@@ -1274,45 +1620,62 @@ window.deleteQuizQuestion = async function(id) {
   }
 };
 
+let showingQuizResults = false;
+
 window.loadQuizResults = async function() {
   const container = document.getElementById('quizQuestionsList');
   if (!container) return;
   
-  container.innerHTML = '<div class="loading">Carregando resultados...</div>';
+  showingQuizResults = !showingQuizResults;
   
-  try {
-    const dbInstance = window.db;
-    if (!dbInstance) {
-      container.innerHTML = '<div class="empty-state">Erro: Firebase não está disponível</div>';
-      return;
+  if (showingQuizResults) {
+    container.innerHTML = '<div class="loading">Carregando resultados...</div>';
+    
+    try {
+      const dbInstance = window.db;
+      if (!dbInstance) {
+        container.innerHTML = '<div class="empty-state">Erro: Firebase não está disponível</div>';
+        return;
+      }
+      
+      // Buscar da coleção userScores (ranking geral)
+      const snapshot = await dbInstance.collection('userScores')
+        .orderBy('score', 'desc')
+        .limit(50)
+        .get();
+      
+      if (snapshot.empty) {
+        container.innerHTML = '<div class="empty-state">Nenhum resultado encontrado</div>';
+        return;
+      }
+      
+      let html = '<div style="margin-bottom: 16px;"><button class="btn btn-secondary" onclick="loadQuizResults()">← Voltar para Perguntas</button></div>';
+      html += '<h3 style="margin-bottom: 16px;">🏆 Top 50 - Ranking de Quiz</h3>';
+      
+      snapshot.forEach((doc, index) => {
+        const data = doc.data();
+        const percentage = data.totalQuestions > 0 ? ((data.correctAnswers / data.totalQuestions) * 100).toFixed(1) : 0;
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+        
+        html += `
+          <div class="item-card" style="margin-bottom: 12px;">
+            <div class="item-title">${medal} #${index + 1} - ${data.userName || 'Usuário'}</div>
+            <div class="item-text"><strong>Pontuação Total:</strong> <span style="color: #FFD700; font-weight: bold;">${data.score || 0}</span></div>
+            <div class="item-text"><strong>Acertos:</strong> ${data.correctAnswers || 0} de ${data.totalQuestions || 0} perguntas</div>
+            <div class="item-text"><strong>Taxa de Acerto:</strong> ${percentage}%</div>
+            <div class="item-text"><strong>Última Atualização:</strong> ${data.updatedAt?.toDate().toLocaleString('pt-BR') || 'N/A'}</div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    } catch (error) {
+      console.error('Erro ao carregar resultados:', error);
+      container.innerHTML = '<div class="empty-state">Erro ao carregar resultados</div>';
     }
-    
-    const snapshot = await dbInstance.collection('quizScores')
-      .orderBy('score', 'desc')
-      .limit(50)
-      .get();
-    
-    if (snapshot.empty) {
-      container.innerHTML = '<div class="empty-state">Nenhum resultado encontrado</div>';
-      return;
-    }
-    
-    container.innerHTML = '<h3>Top 50 Resultados</h3>';
-    snapshot.forEach((doc, index) => {
-      const data = doc.data();
-      const card = document.createElement('div');
-      card.className = 'item-card';
-      card.innerHTML = `
-        <div class="item-title">#${index + 1} - ${data.userName || 'Usuário'}</div>
-        <div class="item-text"><strong>Pontuação:</strong> ${data.score}/${data.totalQuestions || 0}</div>
-        <div class="item-text"><strong>Acertos:</strong> ${data.correctAnswers || 0}</div>
-        <div class="item-text"><strong>Data:</strong> ${data.createdAt?.toDate().toLocaleString('pt-BR')}</div>
-      `;
-      container.appendChild(card);
-    });
-  } catch (error) {
-    console.error('Erro ao carregar resultados:', error);
-    container.innerHTML = '<div class="empty-state">Erro ao carregar resultados</div>';
+  } else {
+    // Voltar para lista de perguntas
+    loadQuiz();
   }
 };
 
