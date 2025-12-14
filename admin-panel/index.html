@@ -228,9 +228,9 @@
 
     <!-- Modal para adicionar moedas -->
     <div id="coinsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
             <span class="close" onclick="closeCoinsModal()">&times;</span>
-            <h2>💰 Adicionar Moedas</h2>
+            <h2 style="margin-bottom: 20px; padding-right: 30px;">💰 Adicionar Moedas</h2>
             <div id="coinsModalBody">
                 <p style="margin-bottom: 16px;"><strong>Usuário:</strong> <span id="coinsUserName"></span></p>
                 <p style="margin-bottom: 16px;"><strong>Moedas Atuais:</strong> <span id="coinsCurrentAmount" style="color: #FFD700; font-weight: bold;"></span></p>
@@ -260,10 +260,10 @@
 
     <!-- Modal para exibir senha criada -->
     <div id="passwordModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
             <span class="close" onclick="closePasswordModal()">&times;</span>
-            <h2>✅ Conta Criada com Sucesso!</h2>
-            <div style="padding: 20px;">
+            <h2 style="margin-bottom: 20px; padding-right: 30px;">✅ Conta Criada com Sucesso!</h2>
+            <div style="padding: 0 0 20px 0;">
                 <div style="margin-bottom: 16px;">
                     <p><strong>Usuário:</strong> <span id="passwordUserName"></span></p>
                     <p><strong>Email:</strong> <span id="passwordUserEmail"></span></p>
@@ -289,10 +289,10 @@
 
     <!-- Modal para criar/editar pergunta de quiz -->
     <div id="quizQuestionModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
             <span class="close" onclick="closeQuizQuestionModal()">&times;</span>
-            <h2 id="quizModalTitle">📚 Nova Pergunta de Quiz</h2>
-            <div style="padding: 20px;">
+            <h2 id="quizModalTitle" style="margin-bottom: 20px; padding-right: 30px;">📚 Nova Pergunta de Quiz</h2>
+            <div style="padding: 0 0 20px 0;">
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: bold;">Pergunta *</label>
                     <textarea id="quizQuestion" placeholder="Digite a pergunta..." rows="3"
@@ -342,10 +342,10 @@
 
     <!-- Modal para criar item da loja -->
     <div id="createItemModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
             <span class="close" onclick="closeCreateItemModal()">&times;</span>
-            <h2>🛒 Criar Novo Item</h2>
-            <div style="padding: 20px;">
+            <h2 style="margin-bottom: 20px; padding-right: 30px;">🛒 Criar Novo Item</h2>
+            <div style="padding: 0 0 20px 0;">
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: bold;">Nome do Item *</label>
                     <input type="text" id="itemName" placeholder="Ex: Moldura Dourada" 

@@ -15,7 +15,8 @@
       },
       "env": {
         "NODE_ENV": "production"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "android": {
@@ -23,7 +24,16 @@
       },
       "env": {
         "NODE_ENV": "production"
-      }
+      },
+      "channel": "production"
+    }
+  },
+  "update": {
+    "preview": {
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
     }
   },
   "submit": {
