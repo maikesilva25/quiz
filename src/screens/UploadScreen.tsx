@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Video } from 'expo-av';
+import { Video as ExpoVideo } from 'expo-av';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadVideo, uploadPhoto, uploadText } from '../services/oracaoService';
@@ -30,13 +30,21 @@ export const UploadScreen: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPedidoOracao, setIsPedidoOracao] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Verificar se user e userData estão disponíveis
   useEffect(() => {
-    if (user && userData) {
+    try {
+      if (user && userData) {
+        setLoading(false);
+        setError(null);
+      } else {
+        setLoading(true);
+      }
+    } catch (err: any) {
+      console.error('Erro no useEffect do UploadScreen:', err);
+      setError('Erro ao carregar dados do usuário');
       setLoading(false);
-    } else {
-      setLoading(true);
     }
   }, [user, userData]);
 
@@ -169,6 +177,27 @@ export const UploadScreen: React.FC = () => {
 
   const styles = createStyles(colors);
 
+  // Se houver erro, mostrar mensagem de erro
+  if (error) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="alert-circle" size={48} color={colors.error} />
+        <Text style={{ marginTop: 16, color: colors.text, fontSize: 16, textAlign: 'center' }}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          style={[styles.uploadButton, { backgroundColor: colors.primary, marginTop: 20 }]}
+          onPress={() => {
+            setError(null);
+            setLoading(true);
+          }}
+        >
+          <Text style={styles.uploadButtonText}>Tentar Novamente</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   // Se ainda estiver carregando ou não tiver user/userData, mostrar loading
   if (loading || !user || !userData) {
     return (
@@ -211,9 +240,9 @@ export const UploadScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {videoUri && (
+      {videoUri && videoUri.trim() !== '' && (
         <View style={styles.mediaPreview}>
-          <Video
+          <ExpoVideo
             source={{ uri: videoUri }}
             style={styles.videoPreview}
             useNativeControls
@@ -224,6 +253,7 @@ export const UploadScreen: React.FC = () => {
               console.error('Erro ao carregar vídeo:', error);
               Alert.alert('Erro', 'Não foi possível carregar o vídeo. Tente novamente.');
               setVideoUri(null);
+              setType('text');
             }}
             onLoadStart={() => {
               console.log('Iniciando carregamento do vídeo');
@@ -238,6 +268,7 @@ export const UploadScreen: React.FC = () => {
               setVideoUri(null);
               setType('text');
             }}
+            activeOpacity={0.7}
           >
             <Ionicons name="close-circle" size={24} color={colors.error} />
           </TouchableOpacity>

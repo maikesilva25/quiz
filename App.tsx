@@ -31,6 +31,7 @@ import { subscribeToSettings, getSystemSettings } from './src/services/settingsS
 import type { SystemSettings } from './src/services/settingsService';
 import { subscribeToNotifications } from './src/services/notificationsService';
 import { Notification } from './src/types';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -275,13 +276,24 @@ const MainApp: React.FC = () => {
           <FeedScreen onUserPress={handleUserPress} />
         )}
         {currentScreen === 'upload' && (
-          <React.Suspense fallback={
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          }>
+          <ErrorBoundary
+            fallback={
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                <Ionicons name="alert-circle" size={48} color={colors.error} />
+                <Text style={{ color: colors.text, fontSize: 16, textAlign: 'center', marginTop: 16, marginBottom: 20 }}>
+                  Erro ao carregar tela de postagem
+                </Text>
+                <TouchableOpacity
+                  style={[createStyles(colors).navButton, { backgroundColor: colors.primary, padding: 12, borderRadius: 8 }]}
+                  onPress={() => setCurrentScreen('feed')}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Voltar ao Feed</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          >
             <UploadScreen />
-          </React.Suspense>
+          </ErrorBoundary>
         )}
         {currentScreen === 'profile' && (
           <ProfileScreen onUserPress={handleUserPress} />
