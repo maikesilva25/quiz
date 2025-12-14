@@ -13,6 +13,7 @@
     "build:ios:prod": "eas build --platform ios --profile production",
     "build:all": "eas build --platform all --profile preview",
     "prebuild": "expo prebuild --clean",
+    "postbuild": "node -e \"const fs=require('fs');const config='module.exports={project:{android:{packageName:\\'com.nossoapp.oracoes\\'}}};';if(!fs.existsSync('react-native.config.js'))fs.writeFileSync('react-native.config.js',config);\"",
     "build:local:debug": "cd android && gradlew.bat assembleDebug",
     "build:local:release": "cd android && gradlew.bat assembleRelease",
     "build:auto": "eas build --platform android --profile preview"
