@@ -70,17 +70,24 @@ const MainApp: React.FC = () => {
     async function prepare() {
       try {
         // Verificar atualizações OTA
-        if (!__DEV__) {
+        if (Updates.isEnabled) {
           try {
             const update = await Updates.checkForUpdateAsync();
             if (update.isAvailable) {
+              console.log('Atualização OTA disponível, baixando...');
               await Updates.fetchUpdateAsync();
+              console.log('Atualização baixada, recarregando app...');
               // Recarregar o app com a nova atualização
               await Updates.reloadAsync();
+              return; // Não continua se houver atualização
+            } else {
+              console.log('Nenhuma atualização OTA disponível');
             }
           } catch (error) {
             console.warn('Erro ao verificar atualizações OTA:', error);
           }
+        } else {
+          console.log('Updates não está habilitado (modo desenvolvimento)');
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {

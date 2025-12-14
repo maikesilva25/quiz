@@ -25,12 +25,14 @@ export const getCurrentVersion = (): string => {
  */
 export const checkOTAUpdate = async (): Promise<boolean> => {
   try {
-    // OTA não funciona em desenvolvimento
-    if (process.env.NODE_ENV === 'development' || __DEV__) {
+    // Verifica se Updates está habilitado
+    if (!Updates.isEnabled) {
+      console.log('Updates não está habilitado');
       return false;
     }
 
     const update = await Updates.checkForUpdateAsync();
+    console.log('Verificação OTA:', { isAvailable: update.isAvailable, manifest: update.manifest?.id });
     return update.isAvailable;
   } catch (error) {
     console.error('Erro ao verificar atualização OTA:', error);
@@ -43,14 +45,14 @@ export const checkOTAUpdate = async (): Promise<boolean> => {
  */
 export const applyOTAUpdate = async (): Promise<void> => {
   try {
-    // OTA não funciona em desenvolvimento
-    if (process.env.NODE_ENV === 'development' || __DEV__) {
-      Alert.alert('Aviso', 'Atualizações OTA não estão disponíveis em modo de desenvolvimento.');
+    if (!Updates.isEnabled) {
+      Alert.alert('Aviso', 'Atualizações OTA não estão disponíveis. Certifique-se de que está usando um build de produção.');
       return;
     }
 
     const update = await Updates.checkForUpdateAsync();
     if (update.isAvailable) {
+      Alert.alert('Atualizando...', 'Baixando atualização. O app será recarregado automaticamente.');
       await Updates.fetchUpdateAsync();
       await Updates.reloadAsync();
     } else {
