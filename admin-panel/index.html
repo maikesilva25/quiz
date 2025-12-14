@@ -207,6 +207,45 @@
                         </div>
                         <button class="btn btn-success" onclick="saveSettings()">Salvar Configurações</button>
                     </div>
+
+                    <div class="item-card" style="margin-top: 20px;">
+                        <h3>📱 Gerenciar Atualizações do App</h3>
+                        <div id="updateInfo" style="margin-bottom: 16px; padding: 12px; background: #f0f0f0; border-radius: 8px;">
+                            <div class="loading">Carregando informações de atualização...</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Versão *</label>
+                            <input type="text" id="updateVersion" placeholder="Ex: 1.0.1" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                            <small style="color: #666;">Formato: x.y.z (ex: 1.0.1)</small>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Código da Versão *</label>
+                            <input type="number" id="updateVersionCode" placeholder="Ex: 2" min="1" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                            <small style="color: #666;">Número sequencial (deve ser maior que a versão anterior)</small>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>URL de Download do APK *</label>
+                            <input type="url" id="updateDownloadUrl" placeholder="https://exemplo.com/app-release.apk" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                            <small style="color: #666;">Link direto para download do APK</small>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Notas de Versão</label>
+                            <textarea id="updateReleaseNotes" placeholder="O que há de novo nesta versão..." rows="4" style="width: 100%; padding: 8px; margin-top: 4px;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Data de Lançamento *</label>
+                            <input type="date" id="updateReleaseDate" style="width: 100%; padding: 8px; margin-top: 4px;" />
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="updateMandatory" style="width: 20px; height: 20px;">
+                                <span>Atualização Obrigatória</span>
+                            </label>
+                            <small style="color: #666;">Se marcado, os usuários não poderão pular esta atualização</small>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveUpdate()" style="margin-right: 8px;">💾 Salvar Atualização</button>
+                        <button class="btn btn-secondary" onclick="loadUpdateInfo()">🔄 Recarregar</button>
+                    </div>
                 </div>
             </div>
         </div>

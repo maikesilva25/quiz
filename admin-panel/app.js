@@ -384,6 +384,7 @@ async function loadTab(tab) {
       break;
     case 'settings':
       await loadSettings();
+      await loadUpdateInfo();
       break;
   }
 }
@@ -2246,4 +2247,125 @@ window.clearProcessedRequests = async function() {
     console.error('Erro ao limpar solicitações:', error);
     alert('Erro ao limpar solicitações: ' + error.message);
   }
-};;
+};
+
+// Carregar informações de atualização
+window.loadUpdateInfo = async function() {
+  const container = document.getElementById('updateInfo');
+  if (!container) return;
+  
+  container.innerHTML = '<div class="loading">Carregando informações de atualização...</div>';
+  
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      container.innerHTML = '<div style="color: red;">Erro: Firebase não está disponível</div>';
+      return;
+    }
+    
+    const updateDoc = await dbInstance.collection('app_updates').doc('latest').get();
+    
+    if (updateDoc.exists()) {
+      const data = updateDoc.data();
+      container.innerHTML = `
+        <div style="padding: 12px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+          <strong>✅ Atualização Configurada</strong><br>
+          <small>Versão: ${data.version} (Código: ${data.versionCode})</small><br>
+          <small>Lançada em: ${data.releaseDate ? new Date(data.releaseDate).toLocaleDateString('pt-BR') : 'N/A'}</small><br>
+          <small>${data.mandatory ? '🔒 Obrigatória' : '📱 Opcional'}</small>
+        </div>
+      `;
+      
+      // Preencher campos do formulário
+      document.getElementById('updateVersion').value = data.version || '';
+      document.getElementById('updateVersionCode').value = data.versionCode || '';
+      document.getElementById('updateDownloadUrl').value = data.downloadUrl || '';
+      document.getElementById('updateReleaseNotes').value = data.releaseNotes || '';
+      if (data.releaseDate) {
+        const date = new Date(data.releaseDate);
+        document.getElementById('updateReleaseDate').value = date.toISOString().split('T')[0];
+      }
+      document.getElementById('updateMandatory').checked = data.mandatory || false;
+    } else {
+      container.innerHTML = `
+        <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+          <strong>⚠️ Nenhuma atualização configurada</strong><br>
+          <small>Configure uma atualização abaixo para que os usuários possam baixá-la.</small>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Erro ao carregar informações de atualização:', error);
+    container.innerHTML = '<div style="color: red;">Erro ao carregar informações de atualização</div>';
+  }
+};
+
+// Salvar atualização
+window.saveUpdate = async function() {
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    const version = document.getElementById('updateVersion').value.trim();
+    const versionCode = parseInt(document.getElementById('updateVersionCode').value);
+    const downloadUrl = document.getElementById('updateDownloadUrl').value.trim();
+    const releaseNotes = document.getElementById('updateReleaseNotes').value.trim();
+    const releaseDate = document.getElementById('updateReleaseDate').value;
+    const mandatory = document.getElementById('updateMandatory').checked;
+    
+    // Validações
+    if (!version) {
+      alert('Por favor, preencha a versão.');
+      return;
+    }
+    
+    if (!/^\d+\.\d+\.\d+$/.test(version)) {
+      alert('Formato de versão inválido. Use o formato x.y.z (ex: 1.0.1)');
+      return;
+    }
+    
+    if (!versionCode || versionCode < 1) {
+      alert('Por favor, preencha um código de versão válido (número maior que 0).');
+      return;
+    }
+    
+    if (!downloadUrl) {
+      alert('Por favor, preencha a URL de download.');
+      return;
+    }
+    
+    if (!releaseDate) {
+      alert('Por favor, selecione a data de lançamento.');
+      return;
+    }
+    
+    // Salvar no Firebase
+    await dbInstance.collection('app_updates').doc('latest').set({
+      version: version,
+      versionCode: versionCode,
+      downloadUrl: downloadUrl,
+      releaseNotes: releaseNotes || '',
+      mandatory: mandatory,
+      releaseDate: new Date(releaseDate).toISOString(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentUser.uid
+    });
+    
+    // Log da ação
+    await dbInstance.collection('adminLogs').add({
+      action: 'Atualização do app configurada',
+      adminEmail: currentUser.email,
+      details: `Versão: ${version} (${versionCode}), URL: ${downloadUrl}`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert('✅ Atualização salva com sucesso! Os usuários poderão verificar e baixar esta atualização no app.');
+    loadUpdateInfo();
+  } catch (error) {
+    console.error('Erro ao salvar atualização:', error);
+    alert('Erro ao salvar atualização: ' + error.message);
+  }
+};
