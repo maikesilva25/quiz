@@ -27,6 +27,7 @@ import { getUserPurchasedItems, applyFrame, removeFrame } from '../services/user
 import { ShopItem } from '../types';
 import { getUnreadCount, subscribeToNotifications } from '../services/notificationsService';
 import { Notification } from '../types';
+import { checkForUpdates, applyUpdate, getCurrentVersion, UpdateStatus } from '../services/updateService';
 
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
@@ -48,6 +49,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const [loadingItems, setLoadingItems] = useState(false);
   const [showItemsModal, setShowItemsModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<any>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [applyingUpdate, setApplyingUpdate] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -179,6 +184,54 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         setUploadingPhoto(false);
       }
     }
+  };
+
+  const handleCheckUpdate = async () => {
+    setShowUpdateModal(true);
+    setCheckingUpdate(true);
+    setUpdateStatus(null);
+    
+    try {
+      const status = await checkForUpdates();
+      setUpdateStatus(status);
+    } catch (error: any) {
+      setUpdateStatus({
+        isAvailable: false,
+        isDownloaded: false,
+        isChecking: false,
+        isDownloading: false,
+        error: error.message || 'Erro ao verificar atualizações',
+      });
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleApplyUpdate = async () => {
+    if (!updateStatus?.isDownloaded) {
+      Alert.alert('Erro', 'Nenhuma atualização disponível para aplicar');
+      return;
+    }
+
+    Alert.alert(
+      'Aplicar Atualização',
+      'O app será reiniciado para aplicar a atualização. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Aplicar',
+          onPress: async () => {
+            setApplyingUpdate(true);
+            try {
+              await applyUpdate();
+            } catch (error: any) {
+              Alert.alert('Erro', error.message || 'Erro ao aplicar atualização');
+              setApplyingUpdate(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLogout = async () => {
@@ -400,6 +453,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         </View>
       </View>
 
+      {/* Seção de Configurações */}
+      <View style={styles.settingsSection}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>⚙️ Configurações</Text>
+        <TouchableOpacity
+          style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={handleCheckUpdate}
+          disabled={checkingUpdate}
+        >
+          <Ionicons name="refresh-outline" size={20} color={colors.primary} />
+          <Text style={[styles.settingsButtonText, { color: colors.text }]}>
+            {checkingUpdate ? 'Buscando atualizações...' : 'Buscar Atualização'}
+          </Text>
+          {checkingUpdate && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />}
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color={colors.error} />
         <Text style={[styles.logoutText, { color: colors.error }]}>Sair</Text>
@@ -484,7 +553,133 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
                   )}
                 </>
               )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+
+      {/* Modal de Atualização */}
+      <Modal
+        visible={showUpdateModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Atualização do App</Text>
+              <TouchableOpacity
+                onPress={() => setShowUpdateModal(false)}
+                disabled={applyingUpdate}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {checkingUpdate ? (
+                <View style={styles.updateStatusContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.updateStatusText, { color: colors.text }]}>
+                    Verificando atualizações...
+                  </Text>
+                </View>
+              ) : updateStatus ? (
+                <View style={styles.updateStatusContainer}>
+                  {updateStatus.error ? (
+                    <>
+                      <Ionicons name="alert-circle-outline" size={60} color={colors.error} />
+                      <Text style={[styles.updateStatusTitle, { color: colors.text }]}>
+                        Erro ao Verificar
+                      </Text>
+                      <Text style={[styles.updateStatusText, { color: colors.textSecondary }]}>
+                        {updateStatus.error}
+                      </Text>
+                    </>
+                  ) : updateStatus.isAvailable ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={60} color={colors.primary} />
+                      <Text style={[styles.updateStatusTitle, { color: colors.text }]}>
+                        Atualização Disponível!
+                      </Text>
+                      <Text style={[styles.updateStatusText, { color: colors.textSecondary }]}>
+                        Uma nova versão do app está disponível e foi baixada com sucesso.
+                      </Text>
+                      {updateStatus.currentVersion && (
+                        <View style={styles.versionInfo}>
+                          <Text style={[styles.versionLabel, { color: colors.textSecondary }]}>
+                            Versão Atual:
+                          </Text>
+                          <Text style={[styles.versionValue, { color: colors.text }]}>
+                            {updateStatus.currentVersion.substring(0, 8)}
+                          </Text>
+                        </View>
+                      )}
+                      {updateStatus.updateVersion && (
+                        <View style={styles.versionInfo}>
+                          <Text style={[styles.versionLabel, { color: colors.textSecondary }]}>
+                            Nova Versão:
+                          </Text>
+                          <Text style={[styles.versionValue, { color: colors.primary }]}>
+                            {updateStatus.updateVersion.substring(0, 8)}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={60} color={colors.primary} />
+                      <Text style={[styles.updateStatusTitle, { color: colors.text }]}>
+                        App Atualizado
+                      </Text>
+                      <Text style={[styles.updateStatusText, { color: colors.textSecondary }]}>
+                        Você está usando a versão mais recente do app.
+                      </Text>
+                      {updateStatus.currentVersion && (
+                        <View style={styles.versionInfo}>
+                          <Text style={[styles.versionLabel, { color: colors.textSecondary }]}>
+                            Versão:
+                          </Text>
+                          <Text style={[styles.versionValue, { color: colors.text }]}>
+                            {updateStatus.currentVersion.substring(0, 8)}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+              ) : null}
             </ScrollView>
+            <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
+              {updateStatus?.isAvailable && updateStatus.isDownloaded && !updateStatus.error && (
+                <TouchableOpacity
+                  style={[styles.updateButton, { backgroundColor: colors.primary }]}
+                  onPress={handleApplyUpdate}
+                  disabled={applyingUpdate}
+                >
+                  {applyingUpdate ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color="#fff" />
+                      <Text style={styles.updateButtonText}>Aplicar Atualização</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  setShowUpdateModal(false);
+                  setUpdateStatus(null);
+                }}
+                disabled={applyingUpdate}
+              >
+                <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>
+                  {applyingUpdate ? 'Aplicando...' : 'Fechar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -701,6 +896,82 @@ const createStyles = (colors: any) =>
       fontSize: 14,
       textAlign: 'center',
       marginTop: 8,
+    },
+    settingsSection: {
+      padding: 20,
+      marginTop: 20,
+    },
+    settingsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      gap: 12,
+      marginTop: 12,
+    },
+    settingsButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    updateStatusContainer: {
+      alignItems: 'center',
+      padding: 30,
+    },
+    updateStatusTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginTop: 16,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    updateStatusText: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 20,
+      lineHeight: 24,
+    },
+    versionInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 12,
+      gap: 8,
+    },
+    versionLabel: {
+      fontSize: 14,
+    },
+    versionValue: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      fontFamily: 'monospace',
+    },
+    updateButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      borderRadius: 12,
+      gap: 8,
+      marginBottom: 12,
+    },
+    updateButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    modalActions: {
+      padding: 20,
+      borderTopWidth: 1,
+    },
+    modalCloseButton: {
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    modalCloseButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
     },
     logoutButton: {
       flexDirection: 'row',
