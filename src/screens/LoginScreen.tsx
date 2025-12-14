@@ -209,15 +209,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </Text>
         </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.form,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
+        <Animated.View
+          style={[
+            styles.form,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
         {mode === 'login' ? (
           <>
             <Animated.View 
@@ -290,7 +290,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     backgroundColor: colors.primary,
                     shadowColor: colors.primary,
                   },
-                  loading && styles.buttonDisabled,
+                  loading ? styles.buttonDisabled : null,
                 ]}
                 onPress={handleLogin}
                 disabled={loading}
@@ -473,8 +473,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </Animated.View>
           </>
         )}
-      </Animated.View>
-    </ScrollView>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 };
 
