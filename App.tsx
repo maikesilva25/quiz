@@ -21,6 +21,7 @@ import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { StudyRoomsScreen } from './src/screens/StudyRoomsScreen';
 import { StudyRoomScreen } from './src/screens/StudyRoomScreen';
+import { BibleScreen } from './src/screens/BibleScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import { checkNeedsPasswordChange } from './src/services/authService';
@@ -45,7 +46,8 @@ type Screen =
   | 'search'
   | 'chat'
   | 'chatsList'
-  | 'studyRooms';
+  | 'studyRooms'
+  | 'bible';
 
 type OverlayScreen = 'userProfile' | 'chat' | 'changePassword' | 'notifications' | 'studyRoom';
 
@@ -330,6 +332,9 @@ const MainApp: React.FC = () => {
         )}
         {currentScreen === 'studyRooms' && (
           <StudyRoomsScreen onRoomPress={handleStudyRoomPress} onUserPress={handleUserPress} />
+        )}
+        {currentScreen === 'bible' && (
+          <BibleScreen />
         )}
       </View>
 
