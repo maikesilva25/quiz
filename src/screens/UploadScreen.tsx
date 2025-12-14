@@ -52,15 +52,19 @@ export const UploadScreen: React.FC = () => {
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
         quality: 1,
+        videoMaxDuration: 300, // 5 minutos máximo
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        setVideoUri(result.assets[0].uri);
-        setType('video');
+        const uri = result.assets[0].uri;
+        if (uri) {
+          setVideoUri(uri);
+          setType('video');
+        }
       }
     } catch (error: any) {
       console.error('Erro ao selecionar vídeo:', error);
-      Alert.alert('Erro', 'Não foi possível selecionar o vídeo. Tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível selecionar o vídeo. Tente novamente.');
     }
   };
 
@@ -76,15 +80,19 @@ export const UploadScreen: React.FC = () => {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
+        allowsMultipleSelection: false,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        setPhotoUri(result.assets[0].uri);
-        setType('photo');
+        const uri = result.assets[0].uri;
+        if (uri) {
+          setPhotoUri(uri);
+          setType('photo');
+        }
       }
     } catch (error: any) {
       console.error('Erro ao selecionar foto:', error);
-      Alert.alert('Erro', 'Não foi possível selecionar a foto. Tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível selecionar a foto. Tente novamente.');
     }
   };
 
@@ -94,16 +102,22 @@ export const UploadScreen: React.FC = () => {
       return;
     }
 
-    const verified = await isUserVerified(user.uid);
-    const blocked = await isUserBlocked(user.uid);
+    try {
+      const verified = await isUserVerified(user.uid);
+      const blocked = await isUserBlocked(user.uid);
 
-    if (blocked) {
-      Alert.alert('Bloqueado', 'Você está bloqueado e não pode postar conteúdo');
-      return;
-    }
+      if (blocked) {
+        Alert.alert('Bloqueado', 'Você está bloqueado e não pode postar conteúdo');
+        return;
+      }
 
-    if (!verified) {
-      Alert.alert('Verificação necessária', 'Apenas usuários verificados podem postar conteúdo');
+      if (!verified) {
+        Alert.alert('Verificação necessária', 'Apenas usuários verificados podem postar conteúdo');
+        return;
+      }
+    } catch (error: any) {
+      console.error('Erro ao verificar status do usuário:', error);
+      Alert.alert('Erro', 'Não foi possível verificar seu status. Tente novamente.');
       return;
     }
 
@@ -166,7 +180,11 @@ export const UploadScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.typeSelector}>
         <TouchableOpacity
           style={[styles.typeButton, type === 'text' && { backgroundColor: colors.primary }]}
@@ -201,15 +219,25 @@ export const UploadScreen: React.FC = () => {
             useNativeControls
             resizeMode="contain"
             isMuted={true}
+            shouldPlay={false}
             onError={(error) => {
               console.error('Erro ao carregar vídeo:', error);
               Alert.alert('Erro', 'Não foi possível carregar o vídeo. Tente novamente.');
               setVideoUri(null);
             }}
+            onLoadStart={() => {
+              console.log('Iniciando carregamento do vídeo');
+            }}
+            onLoad={() => {
+              console.log('Vídeo carregado com sucesso');
+            }}
           />
           <TouchableOpacity
             style={styles.removeMedia}
-            onPress={() => setVideoUri(null)}
+            onPress={() => {
+              setVideoUri(null);
+              setType('text');
+            }}
           >
             <Ionicons name="close-circle" size={24} color={colors.error} />
           </TouchableOpacity>
@@ -218,10 +246,21 @@ export const UploadScreen: React.FC = () => {
 
       {photoUri && (
         <View style={styles.mediaPreview}>
-          <Image source={{ uri: photoUri }} style={styles.imagePreview} />
+          <Image 
+            source={{ uri: photoUri }} 
+            style={styles.imagePreview}
+            onError={(error) => {
+              console.error('Erro ao carregar imagem:', error);
+              Alert.alert('Erro', 'Não foi possível carregar a imagem. Tente novamente.');
+              setPhotoUri(null);
+            }}
+          />
           <TouchableOpacity
             style={styles.removeMedia}
-            onPress={() => setPhotoUri(null)}
+            onPress={() => {
+              setPhotoUri(null);
+              setType('text');
+            }}
           >
             <Ionicons name="close-circle" size={24} color={colors.error} />
           </TouchableOpacity>

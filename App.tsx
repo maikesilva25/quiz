@@ -202,7 +202,7 @@ const MainApp: React.FC = () => {
   }
 
   // Verificar modo de manutenção (permitir acesso apenas para admins)
-  if (maintenanceMode && user && userData && !userData.isAdmin) {
+  if (maintenanceMode && user && userData && !(userData as any).isAdmin) {
     return (
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <MaintenanceScreen />
@@ -274,7 +274,15 @@ const MainApp: React.FC = () => {
         {currentScreen === 'feed' && (
           <FeedScreen onUserPress={handleUserPress} />
         )}
-        {currentScreen === 'upload' && <UploadScreen />}
+        {currentScreen === 'upload' && (
+          <React.Suspense fallback={
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          }>
+            <UploadScreen />
+          </React.Suspense>
+        )}
         {currentScreen === 'profile' && (
           <ProfileScreen onUserPress={handleUserPress} />
         )}

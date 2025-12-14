@@ -28,14 +28,6 @@
       "channel": "production"
     }
   },
-  "update": {
-    "preview": {
-      "channel": "preview"
-    },
-    "production": {
-      "channel": "production"
-    }
-  },
   "submit": {
     "production": {}
   }
