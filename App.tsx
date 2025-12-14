@@ -80,7 +80,10 @@ const MainApp: React.FC = () => {
               await Updates.fetchUpdateAsync();
               // A atualização será aplicada no próximo restart
               // Você pode adicionar um alerta aqui se quiser
-              console.log('Nova atualização disponível e baixada!');
+              console.log('✅ Nova atualização disponível e baixada!');
+              console.log('📦 Versão da atualização:', update.manifest?.id || 'N/A');
+            } else {
+              console.log('✅ App está atualizado!');
             }
           } catch (updateError) {
             console.warn('Erro ao verificar atualizações:', updateError);
