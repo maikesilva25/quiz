@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
 import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
@@ -21,7 +20,6 @@ import { ChatScreen } from './src/screens/ChatScreen';
 import { ChatsListScreen } from './src/screens/ChatsListScreen';
 import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
-import { CustomSplashScreen } from './src/screens/SplashScreen';
 import { StudyRoomsScreen } from './src/screens/StudyRoomsScreen';
 import { StudyRoomScreen } from './src/screens/StudyRoomScreen';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,8 +30,6 @@ import type { SystemSettings } from './src/services/settingsService';
 import { subscribeToNotifications } from './src/services/notificationsService';
 import { Notification } from './src/types';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-
-SplashScreen.preventAutoHideAsync();
 
 type Screen = 
   | 'login' 
@@ -92,12 +88,11 @@ const MainApp: React.FC = () => {
           }
         }
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {
         console.warn(e);
       } finally {
         setAppIsReady(true);
-        SplashScreen.hideAsync();
       }
     }
     prepare();
@@ -200,7 +195,11 @@ const MainApp: React.FC = () => {
   const styles = createStyles(colors);
 
   if (!appIsReady || authLoading) {
-    return <CustomSplashScreen />;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   // Verificar modo de manutenção (permitir acesso apenas para admins)
