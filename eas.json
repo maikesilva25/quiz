@@ -14,7 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "0"
       },
       "channel": "preview",
       "prebuildCommand": "npx expo prebuild --clean --platform android"

@@ -1,7 +1,9 @@
+const path = require('path');
+
 module.exports = {
   project: {
     android: {
-      sourceDir: './android',
+      sourceDir: path.join(__dirname, 'android'),
       appName: 'app',
       packageName: 'com.nossoapp.oracoes',
     },
