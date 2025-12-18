@@ -39,6 +39,21 @@ export interface BibleChapter {
 
 const API_BASE_URL = 'https://www.abibliadigital.com.br/api';
 
+// Token da API (defina EXPO_PUBLIC_BIBLE_API_TOKEN no seu ambiente)
+const BIBLE_API_TOKEN = process.env.EXPO_PUBLIC_BIBLE_API_TOKEN;
+
+const getRequestOptions = () => {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (BIBLE_API_TOKEN) {
+    headers.Authorization = `Bearer ${BIBLE_API_TOKEN}`;
+  }
+
+  return { headers };
+};
+
 /**
  * Busca um versículo específico por referência
  * @param reference - Referência bíblica (ex: "joao/3/16", "genesis/1/1")
@@ -50,11 +65,14 @@ export const getVerse = async (
 ): Promise<BibleVerse> => {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/verses/${version}/${reference}`
+      `${API_BASE_URL}/verses/${version}/${reference}`,
+      getRequestOptions()
     );
     
     if (!response.ok) {
-      throw new Error(`Erro ao buscar versículo: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado API Bíblia (verso):', errorText);
+      throw new Error(`Erro ao buscar versículo: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -78,11 +96,14 @@ export const getChapter = async (
 ): Promise<BibleChapter> => {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/verses/${version}/${book}/${chapter}`
+      `${API_BASE_URL}/verses/${version}/${book}/${chapter}`,
+      getRequestOptions()
     );
     
     if (!response.ok) {
-      throw new Error(`Erro ao buscar capítulo: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado API Bíblia (capítulo):', errorText);
+      throw new Error(`Erro ao buscar capítulo: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -101,10 +122,15 @@ export const getRandomVerse = async (
   version: string = 'nvi'
 ): Promise<BibleVerse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/verses/${version}/random`);
+    const response = await fetch(
+      `${API_BASE_URL}/verses/${version}/random`,
+      getRequestOptions()
+    );
     
     if (!response.ok) {
-      throw new Error(`Erro ao buscar versículo aleatório: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado API Bíblia (aleatório):', errorText);
+      throw new Error(`Erro ao buscar versículo aleatório: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -123,14 +149,11 @@ export const getVerseOfTheDay = async (
   version: string = 'nvi'
 ): Promise<BibleVerse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/verses/${version}/day`);
-    
-    if (!response.ok) {
-      throw new Error(`Erro ao buscar versículo do dia: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    // A API está retornando 404 para /verses/{version}/day.
+    // Como fallback, usamos o endpoint de versículo aleatório.
+    console.log('Buscando versículo do dia (fallback para random)...');
+    const verse = await getRandomVerse(version);
+    return verse;
   } catch (error) {
     console.error('Erro ao buscar versículo do dia:', error);
     throw error;
@@ -142,10 +165,15 @@ export const getVerseOfTheDay = async (
  */
 export const getBooks = async (): Promise<any[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/books`);
+    const response = await fetch(
+      `${API_BASE_URL}/books`,
+      getRequestOptions()
+    );
     
     if (!response.ok) {
-      throw new Error(`Erro ao buscar livros: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado API Bíblia (livros):', errorText);
+      throw new Error(`Erro ao buscar livros: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -168,11 +196,14 @@ export const searchVerses = async (
   try {
     const encodedSearch = encodeURIComponent(search);
     const response = await fetch(
-      `${API_BASE_URL}/verses/${version}/search/${encodedSearch}`
+      `${API_BASE_URL}/verses/${version}/search/${encodedSearch}`,
+      getRequestOptions()
     );
     
     if (!response.ok) {
-      throw new Error(`Erro ao buscar versículos: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado API Bíblia (busca):', errorText);
+      throw new Error(`Erro ao buscar versículos: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();

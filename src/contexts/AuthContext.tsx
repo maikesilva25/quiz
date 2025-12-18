@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
               activeFrame: undefined,
               activeTheme: undefined,
               adFreeUntil: undefined,
+              bio: '',
             });
           }
         }

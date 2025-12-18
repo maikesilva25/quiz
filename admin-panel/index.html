@@ -31,6 +31,7 @@
             <button class="tab-btn" data-tab="quiz">📚 Quiz</button>
             <button class="tab-btn" data-tab="shop">🛒 Loja</button>
             <button class="tab-btn" data-tab="notifications">🔔 Notificações</button>
+            <button class="tab-btn" data-tab="support">🆘 Suporte</button>
             <button class="tab-btn" data-tab="reports">📈 Relatórios</button>
             <button class="tab-btn" data-tab="settings">⚙️ Configurações</button>
         </div>
@@ -172,6 +173,24 @@
                         <textarea id="notificationMessage" placeholder="Mensagem da notificação" rows="4" style="width: 100%; padding: 8px; margin-top: 4px;"></textarea>
                     </div>
                     <button class="btn btn-success" onclick="sendNotification()">Enviar Notificação</button>
+                </div>
+            </div>
+
+            <!-- Tab: Suporte -->
+            <div id="support-tab" class="tab-content">
+                <h2>🆘 Mensagens de Suporte</h2>
+                <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <label for="supportStatusFilter">Status:</label>
+                    <select id="supportStatusFilter" style="padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="all">Todos</option>
+                        <option value="aberto" selected>Abertos</option>
+                        <option value="respondido">Respondidos</option>
+                        <option value="fechado">Fechados</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadSupportMessages()">🔄 Recarregar</button>
+                </div>
+                <div id="supportList" class="list-container">
+                    <div class="loading">Carregando mensagens...</div>
                 </div>
             </div>
 

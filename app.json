@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orações",
     "slug": "nossoApp",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -40,7 +40,7 @@
         "projectId": "0c5322be-aea3-497f-8f1c-d234d5d25944"
       }
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",

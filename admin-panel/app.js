@@ -379,6 +379,9 @@ async function loadTab(tab) {
     case 'notifications':
       // Não precisa carregar nada, é um formulário
       break;
+    case 'support':
+      await loadSupportMessages();
+      break;
     case 'reports':
       await loadReports();
       break;
@@ -388,6 +391,169 @@ async function loadTab(tab) {
       break;
   }
 }
+
+// ==================== SUPORTE ====================
+async function loadSupportMessages() {
+  const container = document.getElementById('supportList');
+  if (!container) return;
+  
+  container.innerHTML = '<div class="loading">Carregando mensagens...</div>';
+  
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      container.innerHTML = '<div class="empty-state">Erro: Firebase não está disponível</div>';
+      return;
+    }
+    
+    const statusFilterEl = document.getElementById('supportStatusFilter');
+    const statusFilter = statusFilterEl ? statusFilterEl.value : 'aberto';
+    
+    const snapshot = await dbInstance.collection('supportMessages')
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get();
+    
+    if (snapshot.empty) {
+      container.innerHTML = '<div class="empty-state">Nenhuma mensagem de suporte encontrada</div>';
+      return;
+    }
+    
+    container.innerHTML = '';
+    let hasResults = false;
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const status = data.status || 'aberto';
+      
+      if (statusFilter !== 'all' && status !== statusFilter) {
+        return;
+      }
+      
+      hasResults = true;
+      const card = createSupportCard(doc.id, data);
+      container.appendChild(card);
+    });
+    
+    if (!hasResults) {
+      container.innerHTML = '<div class="empty-state">Nenhuma mensagem com o filtro selecionado</div>';
+    }
+  } catch (error) {
+    console.error('Erro ao carregar mensagens de suporte:', error);
+    container.innerHTML = '<div class="empty-state">Erro ao carregar mensagens de suporte</div>';
+  }
+}
+
+function createSupportCard(id, data) {
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  
+  const status = data.status || 'aberto';
+  let statusColor = '#FF9500';
+  if (status === 'respondido') statusColor = '#2e7d32';
+  if (status === 'fechado') statusColor = '#666';
+  
+  const createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('pt-BR') : 'N/A';
+  const answeredAt = data.answeredAt?.toDate ? data.answeredAt.toDate().toLocaleString('pt-BR') : null;
+  
+  card.innerHTML = `
+    <div class="item-title">
+      ${data.subject || 'Sem assunto'}
+      <span style="font-size: 12px; margin-left: 8px; color: ${statusColor}; text-transform: uppercase;">
+        ${status === 'respondido' ? 'Respondido' : status === 'fechado' ? 'Fechado' : 'Aberto'}
+      </span>
+    </div>
+    <div class="item-text"><strong>Usuário:</strong> ${data.userName || 'N/A'} (${data.userEmail || 'sem email'})</div>
+    <div class="item-text"><strong>Tipo:</strong> ${data.type || 'outro'}</div>
+    <div class="item-text"><strong>Data:</strong> ${createdAt}</div>
+    <div class="item-text"><strong>Mensagem:</strong><br>${(data.message || '').replace(/\n/g, '<br>')}</div>
+    ${data.adminReply ? `
+      <div class="item-text" style="margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 8px;">
+        <strong>Resposta do Admin:</strong><br>
+        ${(data.adminReply || '').replace(/\n/g, '<br>')}
+        ${answeredAt ? `<div style="font-size: 11px; color: #666; margin-top: 4px;">Respondido em: ${answeredAt}</div>` : ''}
+      </div>
+    ` : ''}
+    <div class="item-text" style="margin-top: 8px;">
+      <label style="display:block; margin-bottom:4px;"><strong>Resposta Rápida:</strong></label>
+      <textarea id="reply_${id}" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">${data.adminReply || ''}</textarea>
+    </div>
+    <div class="item-actions" style="margin-top: 8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-success" onclick="replySupportMessage('${id}')">Responder</button>
+      <button class="btn btn-secondary" onclick="changeSupportStatus('${id}', '${status === 'fechado' ? 'aberto' : 'fechado'}')">
+        ${status === 'fechado' ? 'Reabrir' : 'Fechar'}
+      </button>
+    </div>
+  `;
+  
+  return card;
+}
+
+window.replySupportMessage = async function(id) {
+  const textarea = document.getElementById(`reply_${id}`);
+  if (!textarea) return;
+  const reply = textarea.value.trim();
+  
+  if (!reply) {
+    alert('Digite uma resposta antes de enviar.');
+    return;
+  }
+  
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    await dbInstance.collection('supportMessages').doc(id).update({
+      adminReply: reply,
+      status: 'respondido',
+      answeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    await dbInstance.collection('adminLogs').add({
+      action: 'Resposta de suporte enviada',
+      adminEmail: currentUser.email,
+      details: `Mensagem de suporte respondida (ID: ${id})`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert('Resposta enviada com sucesso!');
+    loadSupportMessages();
+  } catch (error) {
+    console.error('Erro ao responder suporte:', error);
+    alert('Erro ao enviar resposta de suporte: ' + error.message);
+  }
+};
+
+window.changeSupportStatus = async function(id, newStatus) {
+  try {
+    const dbInstance = window.db;
+    if (!dbInstance) {
+      alert('Erro: Firebase não está disponível');
+      return;
+    }
+    
+    await dbInstance.collection('supportMessages').doc(id).update({
+      status: newStatus,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    await dbInstance.collection('adminLogs').add({
+      action: 'Status de suporte atualizado',
+      adminEmail: currentUser.email,
+      details: `Status alterado para ${newStatus} (ID: ${id})`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    loadSupportMessages();
+  } catch (error) {
+    console.error('Erro ao alterar status do suporte:', error);
+    alert('Erro ao alterar status do suporte: ' + error.message);
+  }
+};
 
 // Carregar solicitações
 async function loadRequests() {

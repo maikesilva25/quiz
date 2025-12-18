@@ -71,7 +71,9 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onUserPress }) => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Carregando orações...</Text>
+        <Text style={styles.loadingText}>
+          Carregando feed atualizado do nosso app...
+        </Text>
       </View>
     );
   }

@@ -20,17 +20,26 @@ export const createChat = async (
   name?: string,
   createdBy?: string
 ): Promise<string> => {
-  const chatData = {
+  const baseData: any = {
     participants,
     type,
-    name: type === 'group' ? name : undefined,
-    createdBy: type === 'group' ? createdBy : undefined,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
     unreadCount: {},
   };
+
+  // Apenas adiciona campos específicos de grupo quando existirem,
+  // para não enviar `undefined` para o Firestore.
+  if (type === 'group') {
+    if (name) {
+      baseData.name = name;
+    }
+    if (createdBy) {
+      baseData.createdBy = createdBy;
+    }
+  }
   
-  const docRef = await addDoc(collection(db, 'chats'), chatData);
+  const docRef = await addDoc(collection(db, 'chats'), baseData);
   return docRef.id;
 };
 

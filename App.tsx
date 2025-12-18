@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
@@ -22,6 +22,7 @@ import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { StudyRoomsScreen } from './src/screens/StudyRoomsScreen';
 import { StudyRoomScreen } from './src/screens/StudyRoomScreen';
 import { BibleScreen } from './src/screens/BibleScreen';
+import { SupportScreen } from './src/screens/SupportScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import { checkNeedsPasswordChange } from './src/services/authService';
@@ -47,7 +48,8 @@ type Screen =
   | 'chat'
   | 'chatsList'
   | 'studyRooms'
-  | 'bible';
+  | 'bible'
+  | 'support';
 
 type OverlayScreen = 'userProfile' | 'chat' | 'changePassword' | 'notifications' | 'studyRoom';
 
@@ -83,11 +85,16 @@ const MainApp: React.FC = () => {
             const update = await Updates.checkForUpdateAsync();
             console.log('Resultado da verificação OTA:', {
               isAvailable: update.isAvailable,
-              manifest: update.manifest?.id,
-              createdAt: update.manifest?.createdAt,
+              manifest: update.manifest,
             });
 
             if (update.isAvailable) {
+              // Avisar o usuário antes de aplicar a OTA
+              Alert.alert(
+                'Atualização disponível',
+                'Uma nova versão do app será baixada e aplicada agora. O aplicativo pode reiniciar automaticamente.',
+              );
+
               console.log('Atualização OTA disponível, baixando...');
               const fetchResult = await Updates.fetchUpdateAsync();
               console.log('Atualização baixada:', {
@@ -328,7 +335,10 @@ const MainApp: React.FC = () => {
           </ErrorBoundary>
         )}
         {currentScreen === 'profile' && (
-          <ProfileScreen onUserPress={handleUserPress} />
+          <ProfileScreen
+            onUserPress={handleUserPress}
+            onSupportPress={() => setCurrentScreen('support')}
+          />
         )}
         {currentScreen === 'quiz' && (
           <QuizScreen onShowRanking={() => setCurrentScreen('ranking')} />
@@ -351,6 +361,9 @@ const MainApp: React.FC = () => {
         )}
         {currentScreen === 'bible' && (
           <BibleScreen />
+        )}
+        {currentScreen === 'support' && (
+          <SupportScreen onBack={() => setCurrentScreen('profile')} />
         )}
       </View>
 
@@ -403,9 +416,18 @@ const MainApp: React.FC = () => {
       )}
 
       {/* Navegação Inferior */}
-      <View style={[createStyles(colors).bottomNav, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }]}>
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'feed' && createStyles(colors).navButtonActive]}
+      <View
+        style={[
+          createStyles(colors).bottomNavWrapper,
+          { paddingBottom: Math.max(insets.bottom, 8) },
+        ]}
+      >
+        <View style={[createStyles(colors).bottomNav, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'feed' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('feed')}
         >
           <Ionicons
@@ -421,10 +443,13 @@ const MainApp: React.FC = () => {
           >
             Feed
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'search' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'search' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('search')}
         >
           <Ionicons
@@ -440,23 +465,23 @@ const MainApp: React.FC = () => {
           >
             Buscar
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, createStyles(colors).navButtonCenter]}
-          onPress={() => setCurrentScreen('upload')}
-        >
-          <View style={[createStyles(colors).centerButton, { backgroundColor: colors.primary }]}>
-            <Ionicons
-              name="add"
-              size={28}
-              color="#fff"
-            />
+          <View style={createStyles(colors).centerButtonWrapper}>
+            <TouchableOpacity
+              style={[createStyles(colors).centerButton, { backgroundColor: colors.primary }]}
+              onPress={() => setCurrentScreen('upload')}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="add" size={30} color="#fff" />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'quiz' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'quiz' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('quiz')}
         >
           <Ionicons
@@ -472,10 +497,13 @@ const MainApp: React.FC = () => {
           >
             Quiz
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'studyRooms' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'studyRooms' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('studyRooms')}
         >
           <Ionicons
@@ -491,10 +519,13 @@ const MainApp: React.FC = () => {
           >
             Estudos
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'bible' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'bible' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('bible')}
         >
           <Ionicons
@@ -510,10 +541,13 @@ const MainApp: React.FC = () => {
           >
             Bíblia
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'chatsList' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'chatsList' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('chatsList')}
         >
           <Ionicons
@@ -529,10 +563,13 @@ const MainApp: React.FC = () => {
           >
             Chat
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[createStyles(colors).navButton, currentScreen === 'profile' && createStyles(colors).navButtonActive]}
+          <TouchableOpacity
+            style={[
+              createStyles(colors).navButton,
+              currentScreen === 'profile' && createStyles(colors).navButtonActive,
+            ]}
           onPress={() => setCurrentScreen('profile')}
         >
           <Ionicons
@@ -548,7 +585,8 @@ const MainApp: React.FC = () => {
           >
             Perfil
           </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -574,17 +612,23 @@ const createStyles = (colors: any) =>
       paddingTop: 0, // Será definido dinamicamente
       paddingBottom: 0, // Será definido dinamicamente
     },
+    bottomNavWrapper: {
+      paddingHorizontal: 8,
+      paddingTop: 4,
+    },
     bottomNav: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
       alignItems: 'center',
-      paddingHorizontal: 4,
-      borderTopWidth: 1,
-      elevation: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      elevation: 10,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
     },
     navButton: {
       flex: 1,
@@ -597,17 +641,18 @@ const createStyles = (colors: any) =>
     navButtonActive: {
       backgroundColor: colors.primary + '15',
     },
-    navButtonCenter: {
-      flex: 0,
-      paddingHorizontal: 8,
+    centerButtonWrapper: {
+      position: 'relative',
+      marginHorizontal: 4,
     },
     centerButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 58,
+      height: 58,
+      borderRadius: 29,
       alignItems: 'center',
       justifyContent: 'center',
-      elevation: 4,
+      marginBottom: 20,
+      elevation: 6,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,

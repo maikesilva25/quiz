@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,9 +33,10 @@ import { checkForUpdates, checkOTAUpdate, getOTAUpdateInfo, applyOTAUpdate, down
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
   onNotificationsPress?: () => void;
+  onSupportPress?: () => void;
 }
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNotificationsPress }) => {
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNotificationsPress, onSupportPress }) => {
   const { user, userData, refreshUserData } = useAuth();
   const { colors } = useTheme();
   const [oracoes, setOracoes] = useState<Oracao[]>([]);
@@ -52,6 +54,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [bio, setBio] = useState('');
+  const [editingBio, setEditingBio] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -66,6 +71,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       }
     }
   }, [user, userData]);
+
+  useEffect(() => {
+    if (userData?.bio !== undefined) {
+      setBio(userData.bio || '');
+    }
+  }, [userData?.bio]);
 
   useEffect(() => {
     if (!user) return;
@@ -207,6 +218,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       Alert.alert('Sucesso!', 'Frame aplicado com sucesso!');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível aplicar o frame');
+    }
+  };
+
+  const handleSaveBio = async () => {
+    if (!user) return;
+
+    try {
+      setSavingBio(true);
+      await updateUserProfile(user.uid, { bio });
+      await refreshUserData();
+      Alert.alert('Sucesso', 'Bio atualizada!');
+      setEditingBio(false);
+    } catch (error) {
+      console.error('Erro ao atualizar bio:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar sua bio.');
+    } finally {
+      setSavingBio(false);
     }
   };
 
@@ -366,6 +394,44 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
           </View>
         )}
 
+        <View style={styles.bioContainer}>
+          <View style={styles.bioHeader}>
+            <Text style={[styles.bioLabel, { color: colors.textSecondary }]}>Bio</Text>
+            <TouchableOpacity onPress={() => setEditingBio(!editingBio)}>
+              <Text style={[styles.bioEditText, { color: colors.primary }]}>
+                {editingBio ? 'Cancelar' : bio ? 'Editar' : 'Adicionar'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {editingBio ? (
+            <View>
+              <TextInput
+                style={[styles.bioInput, { borderColor: colors.border, color: colors.text }]}
+                multiline
+                placeholder="Fale um pouco sobre você..."
+                placeholderTextColor={colors.textSecondary}
+                value={bio}
+                onChangeText={setBio}
+              />
+              <TouchableOpacity
+                style={[styles.bioSaveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveBio}
+                disabled={savingBio}
+              >
+                {savingBio ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.bioSaveButtonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={[styles.bioText, { color: colors.textSecondary }]}>
+              {bio || 'Adicione uma bio para o seu perfil.'}
+            </Text>
+          )}
+        </View>
+
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.text }]}>{oracoes.length}</Text>
@@ -487,7 +553,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
                   Buscar Atualizações
                 </Text>
                 <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
-                  Versão atual: {getCurrentVersion()}
+                  Versão: {getCurrentVersion()} • Toque para verificar
                 </Text>
               </View>
             </View>
@@ -496,6 +562,24 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
             ) : (
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={onSupportPress}
+          >
+            <View style={styles.settingsButtonContent}>
+              <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
+              <View style={styles.settingsButtonText}>
+                <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                  Suporte / Fale com o Admin
+                </Text>
+                <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                  Envie sugestões, bugs ou reclamações
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -794,6 +878,57 @@ const createStyles = (colors: any) =>
     },
     titleText: {
       fontSize: 12,
+      fontWeight: '600',
+    },
+    bioContainer: {
+      width: '100%',
+      marginTop: 16,
+      paddingHorizontal: 16,
+    },
+    bioHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    bioLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    bioEditText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    bioText: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    bioInput: {
+      minHeight: 60,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 14,
+      textAlignVertical: 'top',
+      marginBottom: 8,
+      backgroundColor: colors.background,
+    },
+    bioSaveButton: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    bioSaveButtonText: {
+      color: '#fff',
+      fontSize: 14,
       fontWeight: '600',
     },
     statsRow: {

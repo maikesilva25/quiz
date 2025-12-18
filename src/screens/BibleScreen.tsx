@@ -28,6 +28,7 @@ export const BibleScreen: React.FC = () => {
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [chapter, setChapter] = useState<BibleChapter | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showBookSelector, setShowBookSelector] = useState(false);
   const [showVerseOfDay, setShowVerseOfDay] = useState(false);
   const [verseOfDay, setVerseOfDay] = useState<BibleVerse | null>(null);
@@ -62,11 +63,13 @@ export const BibleScreen: React.FC = () => {
   const loadBooks = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const data = await getBooks();
       setBooks(data);
       setFilteredBooks(data);
     } catch (error) {
       console.error('Erro ao carregar livros:', error);
+      setErrorMessage('Serviço da Bíblia temporariamente indisponível. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -75,10 +78,12 @@ export const BibleScreen: React.FC = () => {
   const loadChapter = async (bookAbbrev: string, chapterNum: number) => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const data = await getChapter(bookAbbrev, chapterNum, version);
       setChapter(data);
     } catch (error) {
       console.error('Erro ao carregar capítulo:', error);
+      setErrorMessage('Não foi possível carregar o capítulo. Verifique sua conexão ou tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -86,10 +91,12 @@ export const BibleScreen: React.FC = () => {
 
   const loadVerseOfDay = async () => {
     try {
+      setErrorMessage(null);
       const data = await getVerseOfTheDay(version);
       setVerseOfDay(data);
     } catch (error) {
       console.error('Erro ao carregar versículo do dia:', error);
+      // Não bloqueia o resto da tela, só não mostra o verso do dia
     }
   };
 
@@ -97,11 +104,13 @@ export const BibleScreen: React.FC = () => {
     if (!searchQuery.trim()) return;
     try {
       setLoading(true);
+      setErrorMessage(null);
       const results = await searchVerses(searchQuery, version);
       setSearchResults(results);
       setShowSearch(true);
     } catch (error) {
       console.error('Erro ao buscar versículos:', error);
+      setErrorMessage('Não foi possível buscar versículos agora. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -163,6 +172,14 @@ export const BibleScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {errorMessage && (
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.error ?? '#ff4d4f' }]}>
+            {errorMessage}
+          </Text>
+        </View>
+      )}
 
       {selectedBook && chapter ? (
         <>
@@ -461,6 +478,15 @@ const createStyles = (colors: any) =>
     emptyText: {
       fontSize: 16,
       marginTop: 16,
+      textAlign: 'center',
+    },
+    errorContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: 'rgba(255, 77, 79, 0.08)',
+    },
+    errorText: {
+      fontSize: 14,
       textAlign: 'center',
     },
     selectButton: {

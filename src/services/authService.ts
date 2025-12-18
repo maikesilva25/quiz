@@ -13,7 +13,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../config/firebase';
 import { User } from '../types';
 
-export interface AuthUser extends User {}
+export interface AuthUser extends User {
+  bio?: string;
+}
 
 export const getUserData = async (userId: string): Promise<AuthUser | null> => {
   try {
@@ -37,6 +39,7 @@ export const getUserData = async (userId: string): Promise<AuthUser | null> => {
         activeFrame: data.activeFrame || undefined,
         activeTheme: data.activeTheme || undefined,
         adFreeUntil: data.adFreeUntil?.toDate() || undefined,
+        bio: data.bio || '',
       } as AuthUser;
     }
     
@@ -56,6 +59,7 @@ export const getUserData = async (userId: string): Promise<AuthUser | null> => {
         activeFrame: undefined,
         activeTheme: undefined,
         adFreeUntil: undefined,
+        bio: '',
       };
       
       try {
@@ -69,9 +73,10 @@ export const getUserData = async (userId: string): Promise<AuthUser | null> => {
           coins: userData.coins,
           titles: userData.titles,
           purchasedItems: userData.purchasedItems,
-          activeFrame: userData.activeFrame,
-          activeTheme: userData.activeTheme,
-          adFreeUntil: userData.adFreeUntil,
+          activeFrame: userData.activeFrame ?? null,
+          activeTheme: userData.activeTheme ?? null,
+          adFreeUntil: userData.adFreeUntil ?? null,
+          bio: userData.bio ?? '',
         });
       } catch (error) {
         console.error('Erro ao criar documento do usuário:', error);
@@ -99,6 +104,7 @@ export const getUserData = async (userId: string): Promise<AuthUser | null> => {
         activeFrame: undefined,
         activeTheme: undefined,
         adFreeUntil: undefined,
+        bio: '',
       } as AuthUser;
     }
     return null;
@@ -155,9 +161,9 @@ export const createUserByAdmin = async (
     coins: 0,
     titles: [],
     purchasedItems: [],
-    activeFrame: undefined,
-    activeTheme: undefined,
-    adFreeUntil: undefined,
+    activeFrame: null,
+    activeTheme: null,
+    adFreeUntil: null,
   });
   
   return userCredential.user;
