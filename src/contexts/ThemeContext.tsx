@@ -19,8 +19,8 @@ const lightColors: ThemeColors = {
   surface: '#F5F5F5',
   text: '#000000',
   textSecondary: '#666666',
-  primary: '#667eea',
-  accent: '#764ba2',
+  primary: '#8B5CF6', // Roxo vibrante
+  accent: '#EC4899', // Rosa vibrante
   error: '#e74c3c',
   success: '#27ae60',
   warning: '#f39c12',
@@ -32,8 +32,8 @@ const darkColors: ThemeColors = {
   surface: '#1E1E1E',
   text: '#FFFFFF',
   textSecondary: '#B0B0B0',
-  primary: '#667eea',
-  accent: '#764ba2',
+  primary: '#A78BFA', // Roxo mais claro para dark mode
+  accent: '#F472B6', // Rosa mais claro para dark mode
   error: '#e74c3c',
   success: '#27ae60',
   warning: '#f39c12',
