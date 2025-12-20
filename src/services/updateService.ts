@@ -89,24 +89,51 @@ export const checkOTAUpdate = async (): Promise<boolean> => {
 /**
  * Baixa e aplica atualização OTA
  */
-export const applyOTAUpdate = async (): Promise<void> => {
+export const applyOTAUpdate = async (): Promise<{ success: boolean; message: string }> => {
   try {
     if (!Updates.isEnabled) {
-      Alert.alert('Aviso', 'Atualizações OTA não estão disponíveis. Certifique-se de que está usando um build de produção.');
-      return;
+      return {
+        success: false,
+        message: 'Atualizações OTA não estão disponíveis. Certifique-se de que está usando um build de produção.',
+      };
     }
 
+    console.log('Verificando atualização OTA...');
     const update = await Updates.checkForUpdateAsync();
-    if (update.isAvailable) {
-      Alert.alert('Atualizando...', 'Baixando atualização. O app será recarregado automaticamente.');
-      await Updates.fetchUpdateAsync();
-      await Updates.reloadAsync();
-    } else {
-      Alert.alert('Atualização', 'Você já está usando a versão mais recente.');
+    
+    if (!update.isAvailable) {
+      return {
+        success: false,
+        message: 'Você já está usando a versão mais recente.',
+      };
     }
-  } catch (error) {
+
+    console.log('Atualização disponível, baixando...');
+    const fetchResult = await Updates.fetchUpdateAsync();
+    
+    if (fetchResult.isNew) {
+      console.log('Nova atualização baixada, recarregando app...');
+      // Pequeno delay para garantir que o usuário veja a mensagem
+      setTimeout(() => {
+        Updates.reloadAsync();
+      }, 500);
+      
+      return {
+        success: true,
+        message: 'Atualização baixada com sucesso! O app será recarregado em instantes...',
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Nenhuma atualização nova foi encontrada.',
+      };
+    }
+  } catch (error: any) {
     console.error('Erro ao aplicar atualização OTA:', error);
-    Alert.alert('Erro', 'Não foi possível aplicar a atualização. Tente novamente mais tarde.');
+    return {
+      success: false,
+      message: error?.message || 'Não foi possível aplicar a atualização. Tente novamente mais tarde.',
+    };
   }
 };
 

@@ -268,9 +268,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
               text: 'Atualizar Agora',
               onPress: async () => {
                 try {
-                  await applyOTAUpdate();
+                  setCheckingUpdate(true);
+                  const result = await applyOTAUpdate();
+                  setCheckingUpdate(false);
+                  
+                  if (result.success) {
+                    Alert.alert('Sucesso', result.message);
+                  } else {
+                    Alert.alert('Aviso', result.message);
+                  }
                 } catch (error) {
                   console.error('Erro ao aplicar atualização OTA:', error);
+                  setCheckingUpdate(false);
+                  Alert.alert('Erro', 'Não foi possível aplicar a atualização.');
                 }
               },
             },
@@ -306,6 +316,42 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       Alert.alert('Erro', 'Não foi possível verificar atualizações. Tente novamente mais tarde.');
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  const handleForceOTAUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      Alert.alert(
+        'Atualização Manual',
+        'Deseja forçar a verificação e atualização OTA agora?',
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => setCheckingUpdate(false) },
+          {
+            text: 'Atualizar',
+            onPress: async () => {
+              try {
+                const result = await applyOTAUpdate();
+                setCheckingUpdate(false);
+                
+                if (result.success) {
+                  Alert.alert('Sucesso', result.message);
+                } else {
+                  Alert.alert('Aviso', result.message);
+                }
+              } catch (error) {
+                console.error('Erro ao aplicar atualização OTA:', error);
+                setCheckingUpdate(false);
+                Alert.alert('Erro', 'Não foi possível aplicar a atualização.');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Erro ao forçar atualização OTA:', error);
+      setCheckingUpdate(false);
+      Alert.alert('Erro', 'Não foi possível verificar atualizações.');
     }
   };
 
@@ -561,6 +607,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingsButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+            onPress={handleForceOTAUpdate}
+            disabled={checkingUpdate}
+          >
+            <View style={styles.settingsButtonContent}>
+              <Ionicons name="download-outline" size={24} color={colors.primary} />
+              <View style={styles.settingsButtonText}>
+                <Text style={[styles.settingsButtonTitle, { color: colors.primary }]}>
+                  Atualizar Agora (OTA)
+                </Text>
+                <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                  Força verificação e aplica atualização OTA
+                </Text>
+              </View>
+            </View>
+            {checkingUpdate ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="arrow-forward-circle" size={20} color={colors.primary} />
             )}
           </TouchableOpacity>
 
