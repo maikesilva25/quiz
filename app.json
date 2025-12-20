@@ -33,7 +33,15 @@
     },
     "plugins": [
       "expo-font",
-      "expo-updates"
+      "expo-updates",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#667eea",
+          "sounds": []
+        }
+      ]
     ],
     "extra": {
       "eas": {
@@ -46,6 +54,7 @@
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0c5322be-aea3-497f-8f1c-d234d5d25944"
-    }
+    },
+    "owner": "maike25"
   }
 }

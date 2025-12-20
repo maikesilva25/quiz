@@ -32,6 +32,7 @@ import { subscribeToNotifications } from './src/services/notificationsService';
 import { Notification } from './src/types';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import * as Updates from 'expo-updates';
+import { scheduleVerseNotification, requestNotificationPermissions } from './src/services/verseNotificationsService';
 
 type Screen = 
   | 'login' 
@@ -183,6 +184,16 @@ const MainApp: React.FC = () => {
       checkNeedsPasswordChange(user.uid).then(needsChange => {
         if (needsChange) {
           setShowChangePassword(true);
+        }
+      });
+
+      // Inicializar notificações de versículos bíblicos
+      requestNotificationPermissions().then(hasPermission => {
+        if (hasPermission) {
+          // Agendar notificação diária às 8h da manhã
+          scheduleVerseNotification(8, 0, 'nvi').catch(error => {
+            console.error('Erro ao agendar notificação de versículo:', error);
+          });
         }
       });
     }

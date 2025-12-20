@@ -29,6 +29,7 @@ import { ShopItem } from '../types';
 import { getUnreadCount, subscribeToNotifications } from '../services/notificationsService';
 import { Notification } from '../types';
 import { checkForUpdates, checkOTAUpdate, getOTAUpdateInfo, applyOTAUpdate, downloadUpdate, formatReleaseDate, getCurrentVersion, type AppUpdateInfo } from '../services/updateService';
+import { scheduleVerseNotification, cancelAllVerseNotifications, getScheduledVerseNotifications, sendVerseNotificationNow, requestNotificationPermissions } from '../services/verseNotificationsService';
 
 interface ProfileScreenProps {
   onUserPress?: (userId: string) => void;
@@ -58,6 +59,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const [editingBio, setEditingBio] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [verseNotificationsEnabled, setVerseNotificationsEnabled] = useState(false);
+  const [checkingVerseNotifications, setCheckingVerseNotifications] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -67,6 +70,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       loadActiveFrame();
       loadPurchasedItems();
       loadUnreadCount();
+      checkVerseNotificationsStatus();
       if (!userData && user) {
         refreshUserData();
       }
@@ -166,6 +170,70 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
       setUnreadCount(count);
     } catch (error) {
       console.error('Erro ao carregar contador de notificações:', error);
+    }
+  };
+
+  const checkVerseNotificationsStatus = async () => {
+    try {
+      const scheduled = await getScheduledVerseNotifications();
+      setVerseNotificationsEnabled(scheduled.length > 0);
+    } catch (error) {
+      console.error('Erro ao verificar status de notificações:', error);
+    }
+  };
+
+  const handleToggleVerseNotifications = async () => {
+    setCheckingVerseNotifications(true);
+    try {
+      if (verseNotificationsEnabled) {
+        // Desativar notificações
+        await cancelAllVerseNotifications();
+        setVerseNotificationsEnabled(false);
+        Alert.alert('Sucesso', 'Notificações de versículos desativadas');
+      } else {
+        // Ativar notificações
+        const hasPermission = await requestNotificationPermissions();
+        if (!hasPermission) {
+          Alert.alert(
+            'Permissão Necessária',
+            'Por favor, permita notificações nas configurações do dispositivo para receber versículos diários.'
+          );
+          setCheckingVerseNotifications(false);
+          return;
+        }
+        
+        // Agendar notificações (manhã, meio-dia e tarde)
+        await scheduleVerseNotification(8, 0, 'nvi');
+        await scheduleVerseNotification(12, 0, 'nvi');
+        await scheduleVerseNotification(18, 0, 'nvi');
+        
+        setVerseNotificationsEnabled(true);
+        Alert.alert('Sucesso', 'Notificações de versículos ativadas! Você receberá versículos às 8h, 12h e 18h.');
+      }
+    } catch (error) {
+      console.error('Erro ao alterar notificações de versículos:', error);
+      Alert.alert('Erro', 'Não foi possível alterar as notificações de versículos.');
+    } finally {
+      setCheckingVerseNotifications(false);
+    }
+  };
+
+  const handleTestVerseNotification = async () => {
+    try {
+      const hasPermission = await requestNotificationPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          'Permissão Necessária',
+          'Por favor, permita notificações nas configurações do dispositivo.'
+        );
+        return;
+      }
+      
+      await sendVerseNotificationNow('nvi');
+      Alert.alert('Notificação Enviada', 'Uma notificação de teste foi enviada!');
+    } catch (error) {
+      console.error('Erro ao enviar notificação de teste:', error);
+      Alert.alert('Erro', 'Não foi possível enviar a notificação de teste.');
     }
   };
 
@@ -804,6 +872,66 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+
+                {/* Notificações de Versículos */}
+                <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
+                
+                <View style={styles.verseNotificationsSection}>
+                  <View style={styles.verseNotificationsHeader}>
+                    <Ionicons name="book-outline" size={24} color={colors.primary} />
+                    <View style={styles.verseNotificationsHeaderText}>
+                      <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                        📖 Versículos Diários
+                      </Text>
+                      <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                        Receba versículos bíblicos como notificações
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.toggleButton,
+                      { 
+                        backgroundColor: verseNotificationsEnabled ? colors.primary : colors.surface,
+                        borderColor: verseNotificationsEnabled ? colors.primary : colors.border,
+                      }
+                    ]}
+                    onPress={handleToggleVerseNotifications}
+                    disabled={checkingVerseNotifications}
+                  >
+                    {checkingVerseNotifications ? (
+                      <ActivityIndicator size="small" color={verseNotificationsEnabled ? "#fff" : colors.primary} />
+                    ) : (
+                      <Text style={[
+                        styles.toggleButtonText,
+                        { color: verseNotificationsEnabled ? "#fff" : colors.text }
+                      ]}>
+                        {verseNotificationsEnabled ? "Ativado" : "Desativado"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {verseNotificationsEnabled && (
+                  <TouchableOpacity
+                    style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 8 }]}
+                    onPress={handleTestVerseNotification}
+                  >
+                    <View style={styles.settingsButtonContent}>
+                      <Ionicons name="notifications-outline" size={24} color={colors.primary} />
+                      <View style={styles.settingsButtonText}>
+                        <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                          Testar Notificação
+                        </Text>
+                        <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                          Enviar uma notificação de teste agora
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="send-outline" size={20} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
               </View>
             </ScrollView>
           </View>
@@ -1415,6 +1543,37 @@ const createStyles = (colors: any) =>
       alignItems: 'center',
     },
     cancelButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    settingsDivider: {
+      height: 1,
+      marginVertical: 16,
+    },
+    verseNotificationsSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 8,
+    },
+    verseNotificationsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    verseNotificationsHeaderText: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    toggleButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 1,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    toggleButtonText: {
       fontSize: 14,
       fontWeight: '600',
     },
