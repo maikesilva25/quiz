@@ -173,23 +173,46 @@ export const applyOTAUpdate = async (): Promise<{ success: boolean; message: str
 
     const fetchResult = await Updates.fetchUpdateAsync();
     
+    console.log('Resultado do fetchUpdateAsync:', {
+      isNew: fetchResult.isNew,
+      manifest: fetchResult.manifest?.id,
+      updateId: Updates.updateId,
+    });
+    
     if (fetchResult.isNew) {
       console.log('Nova atualização baixada, recarregando app...');
+      
       // Pequeno delay para garantir que o usuário veja a mensagem
-      setTimeout(() => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      try {
         if (typeof Updates.reloadAsync === 'function') {
-          Updates.reloadAsync();
+          console.log('Chamando Updates.reloadAsync()...');
+          await Updates.reloadAsync();
+        } else {
+          console.error('Updates.reloadAsync não está disponível');
+          return {
+            success: false,
+            message: 'Função de recarregamento não está disponível. Por favor, reinicie o app manualmente.',
+          };
         }
-      }, 500);
+      } catch (reloadError) {
+        console.error('Erro ao recarregar app:', reloadError);
+        return {
+          success: false,
+          message: 'Erro ao aplicar atualização. Por favor, reinicie o app manualmente.',
+        };
+      }
       
       return {
         success: true,
-        message: 'Atualização baixada com sucesso! O app será recarregado em instantes...',
+        message: 'Atualização aplicada com sucesso!',
       };
     } else {
+      console.log('Nenhuma atualização nova foi encontrada após o download');
       return {
         success: false,
-        message: 'Nenhuma atualização nova foi encontrada.',
+        message: 'Nenhuma atualização nova foi encontrada. Você já está com a versão mais recente.',
       };
     }
   } catch (error: any) {

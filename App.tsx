@@ -137,7 +137,17 @@ const MainApp: React.FC = () => {
                       console.log('Atualização baixada:', {
                         isNew: fetchResult.isNew,
                         manifest: fetchResult.manifest?.id,
+                        updateId: Updates.updateId,
                       });
+                      
+                      if (!fetchResult.isNew) {
+                        console.log('Nenhuma atualização nova foi baixada');
+                        setUpdateProgress('Nenhuma atualização nova encontrada');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        setIsUpdating(false);
+                        Alert.alert('Info', 'Você já está com a versão mais recente do app.');
+                        return;
+                      }
                       
                       // Simular progresso final
                       setUpdateProgress('Aplicando atualização...');
@@ -148,13 +158,26 @@ const MainApp: React.FC = () => {
                       }
                       
                       console.log('Recarregando app com nova atualização...');
+                      setUpdateProgress('Recarregando app...');
                       
                       // Pequeno delay para mostrar 100%
-                      await new Promise(resolve => setTimeout(resolve, 300));
+                      await new Promise(resolve => setTimeout(resolve, 500));
                       
-                      // Recarregar o app com a nova atualização
-                      await Updates.reloadAsync();
-                      // Não continua aqui porque o app será recarregado
+                      try {
+                        // Recarregar o app com a nova atualização
+                        if (typeof Updates.reloadAsync === 'function') {
+                          console.log('Chamando Updates.reloadAsync()...');
+                          await Updates.reloadAsync();
+                        } else {
+                          console.error('Updates.reloadAsync não está disponível');
+                          setIsUpdating(false);
+                          Alert.alert('Erro', 'Não foi possível recarregar o app. Por favor, reinicie manualmente.');
+                        }
+                      } catch (reloadError) {
+                        console.error('Erro ao recarregar app:', reloadError);
+                        setIsUpdating(false);
+                        Alert.alert('Erro', 'Não foi possível aplicar a atualização. Por favor, reinicie o app manualmente.');
+                      }
                     },
                   },
                 ]
