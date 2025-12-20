@@ -40,6 +40,9 @@ export interface BibleChapter {
 
 const API_BASE_URL = 'https://www.abibliadigital.com.br/api';
 const BIBLE_API_BACKUP = 'https://bible-api.com';
+// API alternativa em português - endpoint direto sem autenticação
+const API_BASE_URL_DIRECT = 'https://www.abibliadigital.com.br/api/verses';
+const BIBLE_API_PT = 'https://bible-api.com';
 
 // Token da API (defina EXPO_PUBLIC_BIBLE_API_TOKEN no seu ambiente)
 const BIBLE_API_TOKEN = process.env.EXPO_PUBLIC_BIBLE_API_TOKEN;
@@ -386,7 +389,29 @@ export const getChapter = async (
     console.log('API principal falhou, tentando API alternativa...', error);
   }
 
-  // Fallback para Bible-API
+  // Fallback 1: Tentar API principal sem token (pode funcionar para algumas versões)
+  if (['nvi', 'acf', 'ara', 'as21'].includes(version.toLowerCase())) {
+    try {
+      const url = `${API_BASE_URL_DIRECT}/${version}/${book}/${chapter}`;
+      console.log(`Tentando API direta sem token: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Capítulo encontrado na API direta para versão: ${version}`);
+        return data;
+      }
+    } catch (error) {
+      console.log('API direta falhou, tentando próxima alternativa...', error);
+    }
+  }
+
+  // Fallback 2: Bible-API (principalmente para inglês, mas funciona como último recurso)
   try {
     const bookAbbrev = mapBookToBibleApi(book);
     
@@ -455,7 +480,51 @@ export const getRandomVerse = async (
     console.log('API principal falhou, tentando API alternativa...', error);
   }
 
-  // Fallback: busca versículo aleatório da Bible-API
+  // Fallback 1: Tentar API direta sem token para português
+  if (['nvi', 'acf', 'ara', 'as21'].includes(version.toLowerCase())) {
+    try {
+      const books = await getBooks();
+      const randomBook = books[Math.floor(Math.random() * books.length)];
+      const randomChapter = Math.floor(Math.random() * randomBook.chapters) + 1;
+      
+      const url = `${API_BASE_URL_DIRECT}/${version}/${randomBook.abbrev.pt}/${randomChapter}`;
+      console.log(`Tentando API direta para versículo aleatório: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // A API retorna um array de versículos, pegar um aleatório
+        if (Array.isArray(data) && data.length > 0) {
+          const randomVerse = data[Math.floor(Math.random() * data.length)];
+          console.log(`Versículo aleatório encontrado na API direta para versão: ${version}`);
+          return randomVerse;
+        } else if (data.verses && Array.isArray(data.verses) && data.verses.length > 0) {
+          const randomVerse = data.verses[Math.floor(Math.random() * data.verses.length)];
+          return {
+            book: {
+              abbrev: { pt: randomBook.abbrev.pt, en: randomBook.abbrev.en },
+              name: randomBook.name,
+              author: randomBook.author || '',
+              group: randomBook.group || '',
+              version: version,
+            },
+            chapter: randomChapter,
+            number: randomVerse.number || 1,
+            text: randomVerse.text || '',
+          };
+        }
+      }
+    } catch (error) {
+      console.log('API direta falhou, tentando próxima alternativa...', error);
+    }
+  }
+
+  // Fallback 2: busca versículo aleatório da Bible-API
   try {
     const books = await getBooks();
     const randomBook = books[Math.floor(Math.random() * books.length)];
