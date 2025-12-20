@@ -93,35 +93,68 @@ export const ShopScreen: React.FC = () => {
         </View>
       </View>
       <ScrollView style={styles.itemsContainer}>
-        {items.map((item) => {
-          const isPurchased = purchasedItems.includes(item.id);
-          return (
+        {items.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="storefront-outline" size={80} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              Loja vazia
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+              Os itens serão adicionados em breve
+            </Text>
             <TouchableOpacity
-              key={item.id}
-              style={[styles.itemCard, { backgroundColor: colors.surface }]}
-              onPress={() => handlePurchase(item)}
-              disabled={isPurchased || purchasing === item.id}
+              style={[styles.refreshButton, { backgroundColor: colors.primary }]}
+              onPress={loadData}
             >
-              <Text style={styles.itemIcon}>{item.icon || '🎁'}</Text>
-              <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
-              <Text style={[styles.itemDescription, { color: colors.textSecondary }]}>
-                {item.description}
-              </Text>
-              <View style={styles.itemFooter}>
-                <View style={[styles.rarityBadge, { backgroundColor: RARITY_COLORS[item.rarity] + '20' }]}>
-                  <Text style={[styles.rarityText, { color: RARITY_COLORS[item.rarity] }]}>
-                    {item.rarity}
-                  </Text>
-                </View>
-                <View style={styles.itemPriceContainer}>
-                  <Ionicons name="logo-bitcoin" size={18} color="#FFD700" />
-                  <Text style={[styles.itemPrice, { color: colors.primary }]}>{item.price}</Text>
-                </View>
-              </View>
-              {purchasing === item.id && <ActivityIndicator size="small" color={colors.primary} />}
+              <Ionicons name="refresh" size={20} color="#fff" />
+              <Text style={styles.refreshButtonText}>Recarregar</Text>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        ) : (
+          items.map((item) => {
+            const isPurchased = purchasedItems.includes(item.id);
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.itemCard, 
+                  { backgroundColor: colors.surface },
+                  isPurchased && { opacity: 0.6 }
+                ]}
+                onPress={() => !isPurchased && handlePurchase(item)}
+                disabled={isPurchased || purchasing === item.id}
+              >
+                <Text style={styles.itemIcon}>{item.icon || '🎁'}</Text>
+                <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+                <Text style={[styles.itemDescription, { color: colors.textSecondary }]}>
+                  {item.description}
+                </Text>
+                <View style={styles.itemFooter}>
+                  <View style={[styles.rarityBadge, { backgroundColor: RARITY_COLORS[item.rarity] + '20' }]}>
+                    <Text style={[styles.rarityText, { color: RARITY_COLORS[item.rarity] }]}>
+                      {item.rarity}
+                    </Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Ionicons name="logo-bitcoin" size={18} color="#FFD700" />
+                    <Text style={[styles.itemPrice, { color: colors.primary }]}>{item.price}</Text>
+                  </View>
+                </View>
+                {isPurchased && (
+                  <View style={[styles.purchasedBadge, { backgroundColor: colors.primary + '20' }]}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                    <Text style={[styles.purchasedText, { color: colors.primary }]}>Comprado</Text>
+                  </View>
+                )}
+                {purchasing === item.id && (
+                  <View style={styles.purchasingOverlay}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
     </View>
   );
@@ -145,5 +178,62 @@ const createStyles = (colors: any) =>
     rarityText: { fontSize: 12, fontWeight: 'bold' },
     itemPriceContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     itemPrice: { fontSize: 16, fontWeight: 'bold' },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+      minHeight: 400,
+    },
+    emptyText: {
+      fontSize: 20,
+      fontWeight: '600',
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      gap: 8,
+    },
+    refreshButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    purchasedBadge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+    },
+    purchasedText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    purchasingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+    },
   });
 
