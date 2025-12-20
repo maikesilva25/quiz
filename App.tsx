@@ -69,6 +69,8 @@ const MainApp: React.FC = () => {
   const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
   const [showNotificationBanner, setShowNotificationBanner] = useState(false);
   const [latestAdminNotification, setLatestAdminNotification] = useState<Notification | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<string>('');
 
   useEffect(() => {
     async function prepare() {
@@ -89,19 +91,25 @@ const MainApp: React.FC = () => {
             });
 
             if (update.isAvailable) {
-              // Avisar o usuário antes de aplicar a OTA
-              Alert.alert(
-                'Atualização disponível',
-                'Uma nova versão do app será baixada e aplicada agora. O aplicativo pode reiniciar automaticamente.',
-              );
+              // Mostrar tela de loading durante o download
+              setIsUpdating(true);
+              setUpdateProgress('Verificando atualização...');
 
               console.log('Atualização OTA disponível, baixando...');
+              setUpdateProgress('Baixando atualização...');
+              
               const fetchResult = await Updates.fetchUpdateAsync();
               console.log('Atualização baixada:', {
                 isNew: fetchResult.isNew,
                 manifest: fetchResult.manifest?.id,
               });
+              
+              setUpdateProgress('Aplicando atualização...');
               console.log('Recarregando app com nova atualização...');
+              
+              // Pequeno delay para mostrar a mensagem
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
               // Recarregar o app com a nova atualização
               await Updates.reloadAsync();
               return; // Não continua se houver atualização
@@ -219,6 +227,26 @@ const MainApp: React.FC = () => {
   };
 
   const styles = createStyles(colors);
+
+  // Tela de loading durante atualização OTA
+  if (isUpdating) {
+    return (
+      <View style={[styles.updateContainer, { backgroundColor: colors.background }]}>
+        <View style={styles.updateContent}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.updateTitle, { color: colors.text }]}>
+            Atualizando o app
+          </Text>
+          <Text style={[styles.updateProgress, { color: colors.textSecondary }]}>
+            {updateProgress || 'Preparando atualização...'}
+          </Text>
+          <Text style={[styles.updateSubtext, { color: colors.textSecondary }]}>
+            Por favor, aguarde...
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (!appIsReady || authLoading) {
     return (
@@ -702,6 +730,33 @@ const createStyles = (colors: any) =>
         },
         closeBannerButton: {
           padding: 4,
+        },
+        updateContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 40,
+        },
+        updateContent: {
+          alignItems: 'center',
+          maxWidth: 300,
+        },
+        updateTitle: {
+          fontSize: 24,
+          fontWeight: '700',
+          marginTop: 24,
+          marginBottom: 8,
+          textAlign: 'center',
+        },
+        updateProgress: {
+          fontSize: 16,
+          marginTop: 8,
+          textAlign: 'center',
+        },
+        updateSubtext: {
+          fontSize: 14,
+          marginTop: 16,
+          textAlign: 'center',
         },
       });
 
