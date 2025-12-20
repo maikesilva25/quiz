@@ -47,7 +47,6 @@ AppData/
 Local/Temp/
 **/Temp/
 **/temp/
-**/*.xml
 **/*(1).*
 **/*(2).*
 **/*(3).*
