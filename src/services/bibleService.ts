@@ -370,14 +370,17 @@ export const getChapter = async (
 ): Promise<BibleChapter> => {
   // Tenta primeiro a API principal
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/verses/${version}/${book}/${chapter}`,
-      getRequestOptions()
-    );
+    const url = `${API_BASE_URL}/verses/${version}/${book}/${chapter}`;
+    console.log(`Buscando capítulo na API principal: ${url}`);
+    
+    const response = await fetch(url, getRequestOptions());
     
     if (response.ok) {
       const data = await response.json();
+      console.log(`Capítulo encontrado na API principal para versão: ${version}`);
       return data;
+    } else {
+      console.log(`API principal retornou status ${response.status} para versão ${version}, tentando fallback...`);
     }
   } catch (error) {
     console.log('API principal falhou, tentando API alternativa...', error);
@@ -387,9 +390,25 @@ export const getChapter = async (
   try {
     const bookAbbrev = mapBookToBibleApi(book);
     
-    // Bible-API tem melhor suporte para KJV em inglês
-    // Para português, vamos tentar primeiro, mas pode não funcionar para todas as versões
-    const versionCode = 'kjv'; // Bible-API tem melhor suporte para KJV
+    // Mapear versão para o formato da Bible-API
+    // Bible-API suporta: kjv, asv, basicenglish, darby, web, ylt, etc.
+    // Para versões não suportadas, usar KJV como fallback
+    const bibleApiVersionMap: Record<string, string> = {
+      'kjv': 'kjv',
+      'niv': 'niv',
+      'nvi': 'kjv', // NVI não disponível, usar KJV
+      'acf': 'kjv', // ACF não disponível, usar KJV
+      'ara': 'kjv', // ARA não disponível, usar KJV
+      'as21': 'kjv', // AS21 não disponível, usar KJV
+      'nvt': 'kjv', // NVT não disponível, usar KJV
+      'esv': 'kjv', // ESV não disponível, usar KJV
+      'nlt': 'kjv', // NLT não disponível, usar KJV
+      'nasb': 'kjv', // NASB não disponível, usar KJV
+    };
+    
+    const versionCode = bibleApiVersionMap[version.toLowerCase()] || 'kjv';
+    
+    console.log(`Usando API alternativa (Bible-API) com versão: ${versionCode} (solicitada: ${version})`);
     
     const response = await fetch(
       `${BIBLE_API_BACKUP}/${bookAbbrev}+${chapter}?translation=${versionCode}`,
@@ -402,7 +421,10 @@ export const getChapter = async (
     
     if (response.ok) {
       const data = await response.json();
-      return convertBibleApiChapter(data, bookAbbrev, chapter);
+      const converted = convertBibleApiChapter(data, bookAbbrev, chapter);
+      // Manter a versão solicitada no objeto retornado
+      converted.book.version = version;
+      return converted;
     }
   } catch (error) {
     console.error('Erro na API alternativa:', error);
@@ -442,8 +464,23 @@ export const getRandomVerse = async (
     // Mapeia o livro para a abreviação da Bible-API
     const bookAbbrev = mapBookToBibleApi(randomBook.name, randomBook.abbrev.pt);
     
-    // Bible-API tem melhor suporte para KJV
-    const versionCode = 'kjv';
+    // Mapear versão para o formato da Bible-API
+    const bibleApiVersionMap: Record<string, string> = {
+      'kjv': 'kjv',
+      'niv': 'niv',
+      'nvi': 'kjv', // NVI não disponível, usar KJV
+      'acf': 'kjv', // ACF não disponível, usar KJV
+      'ara': 'kjv', // ARA não disponível, usar KJV
+      'as21': 'kjv', // AS21 não disponível, usar KJV
+      'nvt': 'kjv', // NVT não disponível, usar KJV
+      'esv': 'kjv', // ESV não disponível, usar KJV
+      'nlt': 'kjv', // NLT não disponível, usar KJV
+      'nasb': 'kjv', // NASB não disponível, usar KJV
+    };
+    
+    const versionCode = bibleApiVersionMap[version.toLowerCase()] || 'kjv';
+    
+    console.log(`Usando API alternativa (Bible-API) para versículo aleatório com versão: ${versionCode} (solicitada: ${version})`);
     
     const response = await fetch(
       `${BIBLE_API_BACKUP}/${bookAbbrev}+${randomChapter}?translation=${versionCode}`,
@@ -459,7 +496,7 @@ export const getRandomVerse = async (
       const verses = data.verses || [];
       if (verses.length > 0) {
         const randomVerse = verses[Math.floor(Math.random() * verses.length)];
-        return convertBibleApiVerse(
+        const converted = convertBibleApiVerse(
           { 
             text: randomVerse.text, 
             reference: data.reference,
@@ -470,6 +507,9 @@ export const getRandomVerse = async (
           randomChapter,
           randomVerse.verse || 1
         );
+        // Manter a versão solicitada no objeto retornado
+        converted.book.version = version;
+        return converted;
       }
     }
   } catch (error) {
