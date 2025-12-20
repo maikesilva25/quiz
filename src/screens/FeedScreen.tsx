@@ -21,11 +21,34 @@ interface FeedScreenProps {
 
 export const FeedScreen: React.FC<FeedScreenProps> = ({ onUserPress }) => {
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [oracoes, setOracoes] = useState<Oracao[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [boostedOracoes, setBoostedOracoes] = useState<Set<string>>(new Set());
+
+  // Função para obter saudação baseada no horário
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return 'Bom dia';
+    } else if (hour >= 12 && hour < 18) {
+      return 'Boa tarde';
+    } else {
+      return 'Boa noite';
+    }
+  };
+
+  // Obter nome do usuário
+  const getUserName = () => {
+    if (userData?.name) {
+      return userData.name.split(' ')[0]; // Primeiro nome apenas
+    }
+    if (user?.email) {
+      return user.email.split('@')[0]; // Nome do email como fallback
+    }
+    return 'Usuário';
+  };
 
   const loadOracoes = useCallback(async () => {
     try {
@@ -69,31 +92,54 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onUserPress }) => {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>
-          Carregando feed atualizado do nosso app...
-        </Text>
+      <View style={styles.container}>
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greetingText, { color: colors.text }]}>
+            {getGreeting()}, {getUserName()}! 👋
+          </Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>
+            Carregando feed atualizado do nosso app...
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (oracoes.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>Nenhuma oração ainda</Text>
-        <Text style={styles.emptySubtext}>
-          Seja o primeiro a compartilhar uma oração!
-        </Text>
+      <View style={styles.container}>
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greetingText, { color: colors.text }]}>
+            {getGreeting()}, {getUserName()}! 👋
+          </Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Nenhuma oração ainda</Text>
+          <Text style={styles.emptySubtext}>
+            Seja o primeiro a compartilhar uma oração!
+          </Text>
+        </View>
       </View>
     );
   }
+
+  const renderHeader = () => (
+    <View style={styles.greetingContainer}>
+      <Text style={[styles.greetingText, { color: colors.text }]}>
+        {getGreeting()}, {getUserName()}! 👋
+      </Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
         data={oracoes}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
         renderItem={({ item }) => (
           <OracaoCard
             oracao={item}
@@ -125,7 +171,6 @@ const createStyles = (colors: any) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: colors.background,
       padding: 40,
     },
     loadingText: {
@@ -143,6 +188,16 @@ const createStyles = (colors: any) =>
       fontSize: 14,
       color: colors.textSecondary,
       textAlign: 'center',
+    },
+    greetingContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    greetingText: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
     },
   });
 
