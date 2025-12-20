@@ -58,12 +58,48 @@ const getRequestOptions = () => {
 
 // Mapeamento de versões entre APIs
 const versionMap: Record<string, string> = {
+  // Português
   'nvi': 'nvi',
   'acf': 'acf',
   'ara': 'ara',
   'as21': 'as21',
+  'nvt': 'nvi',
+  // Inglês
   'kjv': 'kjv',
-  'nvt': 'nvi', // Fallback para NVI se não disponível
+  'niv': 'niv',
+  'esv': 'esv',
+  'nlt': 'nlt',
+  'nasb': 'nasb',
+  // Espanhol
+  'rv': 'rv',
+  'nvi-es': 'nvi',
+  'rv1960': 'rv1960',
+  // Francês
+  'lsg': 'lsg',
+  'bds': 'bds',
+  // Alemão
+  'luth': 'luth',
+  'elb': 'elb',
+  // Italiano
+  'cei': 'cei',
+  'nvi-it': 'nvi',
+  // Chinês
+  'cuv': 'cuv',
+  'cuvs': 'cuvs',
+  // Japonês
+  'jlb': 'jlb',
+  // Coreano
+  'krv': 'krv',
+  // Árabe
+  'nav': 'nav',
+  // Russo
+  'rst': 'rst',
+  // Hindi
+  'hin': 'hin',
+  // Grego
+  'sbl': 'sbl',
+  // Hebraico
+  'wlc': 'wlc',
 };
 
 // Mapeamento de livros para Bible-API (formato abreviado)

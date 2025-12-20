@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   FlatList,
+  SectionList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -40,13 +41,64 @@ export const BibleScreen: React.FC = () => {
   const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
 
   const bibleVersions = [
-    { code: 'nvi', name: 'Nova Versão Internacional (NVI)' },
-    { code: 'acf', name: 'Almeida Corrigida Fiel (ACF)' },
-    { code: 'ara', name: 'Almeida Revista e Atualizada (ARA)' },
-    { code: 'as21', name: 'Almeida Século 21 (AS21)' },
-    { code: 'kjv', name: 'King James Version (KJV)' },
-    { code: 'nvt', name: 'Nova Versão Transformadora (NVT)' },
+    // Português
+    { code: 'nvi', name: 'Nova Versão Internacional (NVI)', language: 'Português' },
+    { code: 'acf', name: 'Almeida Corrigida Fiel (ACF)', language: 'Português' },
+    { code: 'ara', name: 'Almeida Revista e Atualizada (ARA)', language: 'Português' },
+    { code: 'as21', name: 'Almeida Século 21 (AS21)', language: 'Português' },
+    { code: 'nvt', name: 'Nova Versão Transformadora (NVT)', language: 'Português' },
+    // Inglês
+    { code: 'kjv', name: 'King James Version (KJV)', language: 'English' },
+    { code: 'niv', name: 'New International Version (NIV)', language: 'English' },
+    { code: 'esv', name: 'English Standard Version (ESV)', language: 'English' },
+    { code: 'nlt', name: 'New Living Translation (NLT)', language: 'English' },
+    { code: 'nasb', name: 'New American Standard Bible (NASB)', language: 'English' },
+    // Espanhol
+    { code: 'rv', name: 'Reina-Valera (RV)', language: 'Español' },
+    { code: 'nvi-es', name: 'Nueva Versión Internacional (NVI)', language: 'Español' },
+    { code: 'rv1960', name: 'Reina-Valera 1960 (RVR1960)', language: 'Español' },
+    // Francês
+    { code: 'lsg', name: 'Louis Segond (LSG)', language: 'Français' },
+    { code: 'bds', name: 'Bible du Semeur (BDS)', language: 'Français' },
+    // Alemão
+    { code: 'luth', name: 'Lutherbibel (LUTH)', language: 'Deutsch' },
+    { code: 'elb', name: 'Elberfelder (ELB)', language: 'Deutsch' },
+    // Italiano
+    { code: 'cei', name: 'Conferenza Episcopale Italiana (CEI)', language: 'Italiano' },
+    { code: 'nvi-it', name: 'Nuova Versione Internazionale (NVI)', language: 'Italiano' },
+    // Chinês
+    { code: 'cuv', name: 'Chinese Union Version (CUV)', language: '中文' },
+    { code: 'cuvs', name: 'Chinese Union Version Simplified (CUVS)', language: '中文' },
+    // Japonês
+    { code: 'jlb', name: 'Japanese Living Bible (JLB)', language: '日本語' },
+    // Coreano
+    { code: 'krv', name: 'Korean Revised Version (KRV)', language: '한국어' },
+    // Árabe
+    { code: 'nav', name: 'Arabic Bible (NAV)', language: 'العربية' },
+    // Russo
+    { code: 'rst', name: 'Russian Synodal Translation (RST)', language: 'Русский' },
+    // Hindi
+    { code: 'hin', name: 'Hindi Bible (HIN)', language: 'हिन्दी' },
+    // Grego
+    { code: 'sbl', name: 'SBL Greek New Testament (SBL)', language: 'Ελληνικά' },
+    // Hebraico
+    { code: 'wlc', name: 'Westminster Leningrad Codex (WLC)', language: 'עברית' },
   ];
+
+  // Agrupar versões por idioma
+  const versionsByLanguage = bibleVersions.reduce((acc, version) => {
+    const lang = version.language || 'Outros';
+    if (!acc[lang]) {
+      acc[lang] = [];
+    }
+    acc[lang].push(version);
+    return acc;
+  }, {} as Record<string, typeof bibleVersions>);
+
+  const versionSections = Object.keys(versionsByLanguage).map(lang => ({
+    title: lang,
+    data: versionsByLanguage[lang],
+  }));
 
   useEffect(() => {
     loadBooks();
@@ -62,10 +114,6 @@ export const BibleScreen: React.FC = () => {
       loadChapter(selectedBook.abbrev.pt, selectedChapter);
     }
   }, [selectedBook, selectedChapter, version]);
-
-  useEffect(() => {
-    loadVerseOfDay();
-  }, [version]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -429,8 +477,8 @@ export const BibleScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <FlatList
-              data={bibleVersions}
+            <SectionList
+              sections={versionSections}
               keyExtractor={(item) => item.code}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -463,6 +511,14 @@ export const BibleScreen: React.FC = () => {
                   )}
                 </TouchableOpacity>
               )}
+              renderSectionHeader={({ section: { title } }) => (
+                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.sectionHeaderText, { color: colors.primary }]}>
+                    {title}
+                  </Text>
+                </View>
+              )}
+              stickySectionHeadersEnabled={false}
             />
           </View>
         </View>
@@ -667,6 +723,15 @@ const createStyles = (colors: any) =>
     versionItemName: {
       fontSize: 16,
       fontWeight: '500',
+    },
+    sectionHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      paddingTop: 20,
+    },
+    sectionHeaderText: {
+      fontSize: 18,
+      fontWeight: '700',
     },
   });
 
