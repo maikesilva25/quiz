@@ -19,6 +19,9 @@ import { createAccountRequest } from '../services/accountRequestService';
 import { checkNeedsPasswordChange } from '../services/authService';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Verificar se LinearGradient está disponível
+const isLinearGradientAvailable = typeof LinearGradient !== 'undefined';
+
 interface LoginScreenProps {
   onLoginSuccess: () => void;
 }
@@ -177,12 +180,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Background Gradient */}
-      <LinearGradient
-        colors={[colors.primary + '08', colors.accent + '05', 'transparent']}
-        style={styles.gradientBackground}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {isLinearGradientAvailable ? (
+        <LinearGradient
+          colors={[colors.primary + '08', colors.accent + '05', 'transparent']}
+          style={styles.gradientBackground}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      ) : (
+        <View style={[styles.gradientBackground, { backgroundColor: colors.primary + '05' }]} />
+      )}
       
       <ScrollView 
         style={styles.scrollView}
@@ -205,14 +212,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               ],
             }}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.accent]}
-              style={styles.iconContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name="heart" size={48} color="#fff" />
-            </LinearGradient>
+            {isLinearGradientAvailable ? (
+              <LinearGradient
+                colors={[colors.primary, colors.accent]}
+                style={styles.iconContainer}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="heart" size={48} color="#fff" />
+              </LinearGradient>
+            ) : (
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
+                <Ionicons name="heart" size={48} color="#fff" />
+              </View>
+            )}
           </Animated.View>
           <Text style={[styles.title, { color: colors.text }]}>Bem-vindo</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -301,24 +314,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 disabled={loading}
                 activeOpacity={0.9}
               >
-                <LinearGradient
-                  colors={[colors.primary, colors.accent]}
-                  style={styles.buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {loading ? (
-                    <>
-                      <ActivityIndicator color="#fff" size="small" />
-                      <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.buttonText}>Entrar</Text>
-                      <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
-                    </>
-                  )}
-                </LinearGradient>
+                {isLinearGradientAvailable ? (
+                  <LinearGradient
+                    colors={[colors.primary, colors.accent]}
+                    style={styles.buttonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    {loading ? (
+                      <>
+                        <ActivityIndicator color="#fff" size="small" />
+                        <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Entrar</Text>
+                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
+                      </>
+                    )}
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.buttonGradient, { backgroundColor: colors.primary }]}>
+                    {loading ? (
+                      <>
+                        <ActivityIndicator color="#fff" size="small" />
+                        <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Entrar</Text>
+                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
+                      </>
+                    )}
+                  </View>
+                )}
               </TouchableOpacity>
             </Animated.View>
 
@@ -450,21 +479,34 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 disabled={loading}
                 activeOpacity={0.9}
               >
-                <LinearGradient
-                  colors={[colors.primary, colors.accent]}
-                  style={styles.buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Text style={styles.buttonText}>Enviar Solicitação</Text>
-                      <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
-                    </>
-                  )}
-                </LinearGradient>
+                {isLinearGradientAvailable ? (
+                  <LinearGradient
+                    colors={[colors.primary, colors.accent]}
+                    style={styles.buttonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Enviar Solicitação</Text>
+                        <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
+                      </>
+                    )}
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.buttonGradient, { backgroundColor: colors.primary }]}>
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Enviar Solicitação</Text>
+                        <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
+                      </>
+                    )}
+                  </View>
+                )}
               </TouchableOpacity>
             </Animated.View>
 
