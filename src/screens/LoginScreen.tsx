@@ -10,12 +10,14 @@ import {
   ScrollView,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { loginUser } from '../services/authService';
 import { createAccountRequest } from '../services/accountRequestService';
 import { checkNeedsPasswordChange } from '../services/authService';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -174,6 +176,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={[colors.primary + '08', colors.accent + '05', 'transparent']}
+        style={styles.gradientBackground}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -192,20 +202,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             style={{
               transform: [
                 { scale: pulseAnim },
-                { rotate: iconRotation },
               ],
             }}
           >
-            <View style={[styles.iconContainer, { 
-              backgroundColor: colors.primary + '20',
-              shadowColor: colors.primary,
-            }]}>
-              <Ionicons name="heart" size={72} color={colors.primary} />
-            </View>
+            <LinearGradient
+              colors={[colors.primary, colors.accent]}
+              style={styles.iconContainer}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="heart" size={48} color="#fff" />
+            </LinearGradient>
           </Animated.View>
-          <Text style={[styles.title, { color: colors.text }]}>Orações</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Bem-vindo</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {mode === 'login' ? 'Faça login para continuar' : 'Solicitar uma conta'}
+            {mode === 'login' ? 'Entre na sua conta para continuar' : 'Solicite uma conta para começar'}
           </Text>
         </Animated.View>
 
@@ -226,7 +237,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 { 
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
-                  shadowColor: colors.primary,
                 },
                 {
                   opacity: fadeAnim,
@@ -234,8 +244,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 },
               ]}
             >
-              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="mail-outline" size={24} color={colors.primary} />
+              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '12' }]}>
+                <Ionicons name="mail-outline" size={20} color={colors.primary} />
               </View>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -255,7 +265,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 { 
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
-                  shadowColor: colors.primary,
                 },
                 {
                   opacity: fadeAnim,
@@ -263,8 +272,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 },
               ]}
             >
-              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
+              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '12' }]}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
               </View>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -286,27 +295,30 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  { 
-                    backgroundColor: colors.primary,
-                    shadowColor: colors.primary,
-                  },
                   loading ? styles.buttonDisabled : null,
                 ]}
                 onPress={handleLogin}
                 disabled={loading}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
               >
-                {loading ? (
-                  <>
-                    <ActivityIndicator color="#fff" size="small" />
-                    <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.buttonText}>Entrar</Text>
-                    <Ionicons name="arrow-forward" size={22} color="#fff" style={{ marginLeft: 8 }} />
-                  </>
-                )}
+                <LinearGradient
+                  colors={[colors.primary, colors.accent]}
+                  style={styles.buttonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {loading ? (
+                    <>
+                      <ActivityIndicator color="#fff" size="small" />
+                      <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.buttonText}>Entrar</Text>
+                      <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
+                    </>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </Animated.View>
 
@@ -433,25 +445,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               }}
             >
               <TouchableOpacity
-                style={[
-                  styles.button,
-                  { 
-                    backgroundColor: colors.primary,
-                    shadowColor: colors.primary,
-                  },
-                ]}
+                style={styles.button}
                 onPress={handleRequestAccount}
                 disabled={loading}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
               >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Text style={styles.buttonText}>Enviar Solicitação</Text>
-                    <Ionicons name="send" size={20} color="#fff" style={{ marginLeft: 8 }} />
-                  </>
-                )}
+                <LinearGradient
+                  colors={[colors.primary, colors.accent]}
+                  style={styles.buttonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Text style={styles.buttonText}>Enviar Solicitação</Text>
+                      <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
+                    </>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </Animated.View>
 
@@ -483,6 +496,14 @@ const createStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      position: 'relative',
+    },
+    gradientBackground: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
     },
     scrollView: {
       flex: 1,
@@ -490,36 +511,45 @@ const createStyles = (colors: any) =>
     content: {
       flexGrow: 1,
       justifyContent: 'center',
-      padding: 24,
+      padding: 32,
       minHeight: '100%',
     },
     header: {
       alignItems: 'center',
-      marginBottom: 48,
+      marginBottom: 56,
     },
     iconContainer: {
-      width: 140,
-      height: 140,
-      borderRadius: 70,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 16,
-      elevation: 8,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 12,
+      marginBottom: 24,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
+        },
+        android: {
+          elevation: 12,
+        },
+      }),
     },
     title: {
-      fontSize: 42,
+      fontSize: 36,
       fontWeight: '800',
-      marginTop: 24,
-      letterSpacing: 1,
+      marginTop: 16,
+      letterSpacing: -0.5,
     },
     subtitle: {
-      fontSize: 16,
-      marginTop: 8,
-      opacity: 0.7,
-      fontWeight: '500',
+      fontSize: 15,
+      marginTop: 12,
+      opacity: 0.75,
+      fontWeight: '400',
+      textAlign: 'center',
+      lineHeight: 22,
     },
     form: {
       width: '100%',
@@ -527,63 +557,82 @@ const createStyles = (colors: any) =>
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderWidth: 2,
-      borderRadius: 20,
+      borderWidth: 1.5,
+      borderRadius: 16,
       paddingHorizontal: 20,
-      marginBottom: 20,
-      gap: 16,
-      elevation: 3,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      minHeight: 64,
+      marginBottom: 16,
+      gap: 14,
+      backgroundColor: colors.surface,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+      minHeight: 60,
     },
     iconWrapper: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       justifyContent: 'center',
       alignItems: 'center',
     },
     input: {
       flex: 1,
-      height: 64,
+      height: 60,
       fontSize: 16,
-      fontWeight: '500',
+      fontWeight: '400',
     },
     button: {
-      height: 64,
-      borderRadius: 20,
+      height: 58,
+      borderRadius: 16,
+      marginTop: 24,
+      overflow: 'hidden',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#667eea',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    buttonGradient: {
+      flex: 1,
+      flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 16,
-      flexDirection: 'row',
-      elevation: 6,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
       paddingHorizontal: 32,
     },
     buttonDisabled: {
-      opacity: 0.7,
+      opacity: 0.6,
     },
     buttonText: {
       color: '#fff',
-      fontSize: 18,
+      fontSize: 17,
       fontWeight: '700',
-      letterSpacing: 1,
+      letterSpacing: 0.5,
     },
     linkButton: {
-      marginTop: 28,
+      marginTop: 32,
       alignItems: 'center',
       paddingVertical: 12,
     },
     linkText: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: 14,
+      fontWeight: '400',
     },
     linkTextBold: {
-      fontWeight: '700',
+      fontWeight: '600',
       textDecorationLine: 'underline',
     },
   });
