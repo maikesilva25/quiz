@@ -17,10 +17,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { loginUser } from '../services/authService';
 import { createAccountRequest } from '../services/accountRequestService';
 import { checkNeedsPasswordChange } from '../services/authService';
-import { LinearGradient } from 'expo-linear-gradient';
-
-// Verificar se LinearGradient está disponível
-const isLinearGradientAvailable = typeof LinearGradient !== 'undefined';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -179,18 +175,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Background Gradient */}
-      {isLinearGradientAvailable ? (
-        <LinearGradient
-          colors={[colors.primary + '08', colors.accent + '05', 'transparent']}
-          style={styles.gradientBackground}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-      ) : (
-        <View style={[styles.gradientBackground, { backgroundColor: colors.primary + '05' }]} />
-      )}
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -209,27 +193,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             style={{
               transform: [
                 { scale: pulseAnim },
+                { rotate: iconRotation },
               ],
             }}
           >
-            {isLinearGradientAvailable ? (
-              <LinearGradient
-                colors={[colors.primary, colors.accent]}
-                style={styles.iconContainer}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name="heart" size={48} color="#fff" />
-              </LinearGradient>
-            ) : (
-              <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-                <Ionicons name="heart" size={48} color="#fff" />
-              </View>
-            )}
+            <View style={[styles.iconContainer, { 
+              backgroundColor: colors.primary + '20',
+              shadowColor: colors.primary,
+            }]}>
+              <Ionicons name="heart" size={72} color={colors.primary} />
+            </View>
           </Animated.View>
-          <Text style={[styles.title, { color: colors.text }]}>Bem-vindo</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Orações</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {mode === 'login' ? 'Entre na sua conta para continuar' : 'Solicite uma conta para começar'}
+            {mode === 'login' ? 'Faça login para continuar' : 'Solicitar uma conta'}
           </Text>
         </Animated.View>
 
@@ -257,8 +234,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 },
               ]}
             >
-              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '12' }]}>
-                <Ionicons name="mail-outline" size={20} color={colors.primary} />
+              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="mail-outline" size={24} color={colors.primary} />
               </View>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -285,8 +262,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 },
               ]}
             >
-              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '12' }]}>
-                <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
+              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
               </View>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -308,45 +285,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <TouchableOpacity
                 style={[
                   styles.button,
+                  { 
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                  },
                   loading ? styles.buttonDisabled : null,
                 ]}
                 onPress={handleLogin}
                 disabled={loading}
-                activeOpacity={0.9}
+                activeOpacity={0.8}
               >
-                {isLinearGradientAvailable ? (
-                  <LinearGradient
-                    colors={[colors.primary, colors.accent]}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    {loading ? (
-                      <>
-                        <ActivityIndicator color="#fff" size="small" />
-                        <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.buttonText}>Entrar</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
-                      </>
-                    )}
-                  </LinearGradient>
+                {loading ? (
+                  <>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
+                  </>
                 ) : (
-                  <View style={[styles.buttonGradient, { backgroundColor: colors.primary }]}>
-                    {loading ? (
-                      <>
-                        <ActivityIndicator color="#fff" size="small" />
-                        <Text style={[styles.buttonText, { marginLeft: 12 }]}>Entrando...</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.buttonText}>Entrar</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 10 }} />
-                      </>
-                    )}
-                  </View>
+                  <>
+                    <Text style={styles.buttonText}>Entrar</Text>
+                    <Ionicons name="arrow-forward" size={22} color="#fff" style={{ marginLeft: 8 }} />
+                  </>
                 )}
               </TouchableOpacity>
             </Animated.View>
@@ -474,38 +432,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               }}
             >
               <TouchableOpacity
-                style={styles.button}
+                style={[
+                  styles.button,
+                  { 
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                  },
+                ]}
                 onPress={handleRequestAccount}
                 disabled={loading}
-                activeOpacity={0.9}
+                activeOpacity={0.8}
               >
-                {isLinearGradientAvailable ? (
-                  <LinearGradient
-                    colors={[colors.primary, colors.accent]}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Text style={styles.buttonText}>Enviar Solicitação</Text>
-                        <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
-                      </>
-                    )}
-                  </LinearGradient>
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
                 ) : (
-                  <View style={[styles.buttonGradient, { backgroundColor: colors.primary }]}>
-                    {loading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Text style={styles.buttonText}>Enviar Solicitação</Text>
-                        <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 10 }} />
-                      </>
-                    )}
-                  </View>
+                  <>
+                    <Text style={styles.buttonText}>Enviar Solicitação</Text>
+                    <Ionicons name="send" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                  </>
                 )}
               </TouchableOpacity>
             </Animated.View>
@@ -538,14 +482,6 @@ const createStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      position: 'relative',
-    },
-    gradientBackground: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
     },
     scrollView: {
       flex: 1,
@@ -553,45 +489,36 @@ const createStyles = (colors: any) =>
     content: {
       flexGrow: 1,
       justifyContent: 'center',
-      padding: 32,
+      padding: 24,
       minHeight: '100%',
     },
     header: {
       alignItems: 'center',
-      marginBottom: 56,
+      marginBottom: 48,
     },
     iconContainer: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
+      width: 140,
+      height: 140,
+      borderRadius: 70,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 24,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-        },
-        android: {
-          elevation: 12,
-        },
-      }),
+      marginBottom: 16,
+      elevation: 8,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
     title: {
-      fontSize: 36,
+      fontSize: 42,
       fontWeight: '800',
-      marginTop: 16,
-      letterSpacing: -0.5,
+      marginTop: 24,
+      letterSpacing: 1,
     },
     subtitle: {
-      fontSize: 15,
-      marginTop: 12,
-      opacity: 0.75,
-      fontWeight: '400',
-      textAlign: 'center',
-      lineHeight: 22,
+      fontSize: 16,
+      marginTop: 8,
+      opacity: 0.7,
+      fontWeight: '500',
     },
     form: {
       width: '100%',
@@ -599,82 +526,63 @@ const createStyles = (colors: any) =>
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderWidth: 1.5,
-      borderRadius: 16,
+      borderWidth: 2,
+      borderRadius: 20,
       paddingHorizontal: 20,
-      marginBottom: 16,
-      gap: 14,
-      backgroundColor: colors.surface,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
-      minHeight: 60,
+      marginBottom: 20,
+      gap: 16,
+      elevation: 3,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      minHeight: 64,
     },
     iconWrapper: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       justifyContent: 'center',
       alignItems: 'center',
     },
     input: {
       flex: 1,
-      height: 60,
+      height: 64,
       fontSize: 16,
-      fontWeight: '400',
+      fontWeight: '500',
     },
     button: {
-      height: 58,
-      borderRadius: 16,
-      marginTop: 24,
-      overflow: 'hidden',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#667eea',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-        },
-        android: {
-          elevation: 8,
-        },
-      }),
-    },
-    buttonGradient: {
-      flex: 1,
-      flexDirection: 'row',
+      height: 64,
+      borderRadius: 20,
       justifyContent: 'center',
       alignItems: 'center',
+      marginTop: 16,
+      flexDirection: 'row',
+      elevation: 6,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
       paddingHorizontal: 32,
     },
     buttonDisabled: {
-      opacity: 0.6,
+      opacity: 0.7,
     },
     buttonText: {
       color: '#fff',
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: '700',
-      letterSpacing: 0.5,
+      letterSpacing: 1,
     },
     linkButton: {
-      marginTop: 32,
+      marginTop: 28,
       alignItems: 'center',
       paddingVertical: 12,
     },
     linkText: {
-      fontSize: 14,
-      fontWeight: '400',
+      fontSize: 15,
+      fontWeight: '500',
     },
     linkTextBold: {
-      fontWeight: '600',
+      fontWeight: '700',
       textDecorationLine: 'underline',
     },
   });
