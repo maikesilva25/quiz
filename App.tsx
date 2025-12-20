@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Alert, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
@@ -528,7 +528,12 @@ const MainApp: React.FC = () => {
           { paddingBottom: Math.max(insets.bottom, 8) },
         ]}
       >
-        <View style={[createStyles(colors).bottomNav, { backgroundColor: colors.surface }]}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 4 }}
+        >
+          <View style={[createStyles(colors).bottomNav, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={[
               createStyles(colors).navButton,
@@ -714,7 +719,8 @@ const MainApp: React.FC = () => {
             Perfil
           </Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -747,7 +753,7 @@ const createStyles = (colors: any) =>
     bottomNav: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 8,
+      paddingHorizontal: 4,
       paddingVertical: 6,
       borderRadius: 20,
       borderWidth: 1,
@@ -757,12 +763,14 @@ const createStyles = (colors: any) =>
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.12,
       shadowRadius: 8,
+      minWidth: '100%',
     },
     navButton: {
-      flex: 1,
+      minWidth: 60,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 6,
+      paddingHorizontal: 8,
       borderRadius: 8,
       marginHorizontal: 2,
     },
