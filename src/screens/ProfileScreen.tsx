@@ -57,6 +57,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
   const [bio, setBio] = useState('');
   const [editingBio, setEditingBio] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -589,62 +590,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
           
           <TouchableOpacity
             style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={handleCheckForUpdates}
-            disabled={checkingUpdate}
+            onPress={() => setShowSettingsModal(true)}
           >
             <View style={styles.settingsButtonContent}>
-              <Ionicons name="refresh-outline" size={24} color={colors.primary} />
+              <Ionicons name="settings-outline" size={24} color={colors.primary} />
               <View style={styles.settingsButtonText}>
                 <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
-                  Buscar Atualizações
+                  Configurações
                 </Text>
                 <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
-                  Versão: {getCurrentVersion()} • Toque para verificar
-                </Text>
-              </View>
-            </View>
-            {checkingUpdate ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingsButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
-            onPress={handleForceOTAUpdate}
-            disabled={checkingUpdate}
-          >
-            <View style={styles.settingsButtonContent}>
-              <Ionicons name="download-outline" size={24} color={colors.primary} />
-              <View style={styles.settingsButtonText}>
-                <Text style={[styles.settingsButtonTitle, { color: colors.primary }]}>
-                  Atualizar Agora (OTA)
-                </Text>
-                <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
-                  Força verificação e aplica atualização OTA
-                </Text>
-              </View>
-            </View>
-            {checkingUpdate ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Ionicons name="arrow-forward-circle" size={20} color={colors.primary} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={onSupportPress}
-          >
-            <View style={styles.settingsButtonContent}>
-              <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
-              <View style={styles.settingsButtonText}>
-                <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
-                  Suporte / Fale com o Admin
-                </Text>
-                <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
-                  Envie sugestões, bugs ou reclamações
+                  Atualizações, suporte e mais
                 </Text>
               </View>
             </View>
@@ -742,6 +697,97 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         </View>
       </View>
     </Modal>
+
+      {/* Modal de Configurações */}
+      <Modal
+        visible={showSettingsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>⚙️ Configurações</Text>
+              <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.settingsModalContent}>
+                <TouchableOpacity
+                  style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={handleCheckForUpdates}
+                  disabled={checkingUpdate}
+                >
+                  <View style={styles.settingsButtonContent}>
+                    <Ionicons name="refresh-outline" size={24} color={colors.primary} />
+                    <View style={styles.settingsButtonText}>
+                      <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                        Buscar Atualizações
+                      </Text>
+                      <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                        Versão: {getCurrentVersion()} • Toque para verificar
+                      </Text>
+                    </View>
+                  </View>
+                  {checkingUpdate ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.settingsButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+                  onPress={handleForceOTAUpdate}
+                  disabled={checkingUpdate}
+                >
+                  <View style={styles.settingsButtonContent}>
+                    <Ionicons name="download-outline" size={24} color={colors.primary} />
+                    <View style={styles.settingsButtonText}>
+                      <Text style={[styles.settingsButtonTitle, { color: colors.primary }]}>
+                        Atualizar Agora (OTA)
+                      </Text>
+                      <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                        Força verificação e aplica atualização OTA
+                      </Text>
+                    </View>
+                  </View>
+                  {checkingUpdate ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Ionicons name="arrow-forward-circle" size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => {
+                    setShowSettingsModal(false);
+                    if (onSupportPress) {
+                      onSupportPress();
+                    }
+                  }}
+                >
+                  <View style={styles.settingsButtonContent}>
+                    <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
+                    <View style={styles.settingsButtonText}>
+                      <Text style={[styles.settingsButtonTitle, { color: colors.text }]}>
+                        Suporte / Fale com o Admin
+                      </Text>
+                      <Text style={[styles.settingsButtonSubtitle, { color: colors.textSecondary }]}>
+                        Envie sugestões, bugs ou reclamações
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Atualização */}
       <Modal
@@ -1260,6 +1306,10 @@ const createStyles = (colors: any) =>
     settingsButtonSubtitle: {
       fontSize: 12,
       marginTop: 2,
+    },
+    settingsModalContent: {
+      padding: 16,
+      gap: 12,
     },
     updateHeaderContent: {
       flexDirection: 'row',
