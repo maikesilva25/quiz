@@ -71,6 +71,7 @@ const MainApp: React.FC = () => {
   const [latestAdminNotification, setLatestAdminNotification] = useState<Notification | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState<string>('');
+  const [updateProgressPercent, setUpdateProgressPercent] = useState<number>(0);
 
   useEffect(() => {
     async function prepare() {
@@ -91,28 +92,73 @@ const MainApp: React.FC = () => {
             });
 
             if (update.isAvailable) {
-              // Mostrar tela de loading durante o download
-              setIsUpdating(true);
-              setUpdateProgress('Verificando atualização...');
+              // Perguntar ao usuário se deseja atualizar
+              Alert.alert(
+                'Atualização Disponível',
+                'Uma nova versão do app está disponível. Deseja atualizar agora?',
+                [
+                  {
+                    text: 'Depois',
+                    style: 'cancel',
+                    onPress: () => {
+                      console.log('Usuário optou por atualizar depois');
+                    },
+                  },
+                  {
+                    text: 'Atualizar Agora',
+                    onPress: async () => {
+                      // Iniciar atualização
+                      setIsUpdating(true);
+                      setUpdateProgressPercent(0);
+                      setUpdateProgress('Preparando atualização...');
 
-              console.log('Atualização OTA disponível, baixando...');
-              setUpdateProgress('Baixando atualização...');
-              
-              const fetchResult = await Updates.fetchUpdateAsync();
-              console.log('Atualização baixada:', {
-                isNew: fetchResult.isNew,
-                manifest: fetchResult.manifest?.id,
-              });
-              
-              setUpdateProgress('Aplicando atualização...');
-              console.log('Recarregando app com nova atualização...');
-              
-              // Pequeno delay para mostrar a mensagem
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
-              // Recarregar o app com a nova atualização
-              await Updates.reloadAsync();
-              return; // Não continua se houver atualização
+                      // Simular progresso durante verificação
+                      for (let i = 0; i <= 20; i++) {
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        setUpdateProgressPercent(i);
+                        setUpdateProgress(`Verificando atualização... ${i}%`);
+                      }
+
+                      console.log('Atualização OTA disponível, baixando...');
+                      
+                      // Simular progresso durante download
+                      setUpdateProgress('Baixando atualização...');
+                      const downloadPromise = Updates.fetchUpdateAsync();
+                      
+                      // Simular progresso de 20% a 90%
+                      for (let i = 20; i <= 90; i += 5) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        setUpdateProgressPercent(i);
+                        setUpdateProgress(`Baixando atualização... ${i}%`);
+                      }
+                      
+                      const fetchResult = await downloadPromise;
+                      console.log('Atualização baixada:', {
+                        isNew: fetchResult.isNew,
+                        manifest: fetchResult.manifest?.id,
+                      });
+                      
+                      // Simular progresso final
+                      setUpdateProgress('Aplicando atualização...');
+                      for (let i = 90; i <= 100; i += 2) {
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        setUpdateProgressPercent(i);
+                        setUpdateProgress(`Aplicando atualização... ${i}%`);
+                      }
+                      
+                      console.log('Recarregando app com nova atualização...');
+                      
+                      // Pequeno delay para mostrar 100%
+                      await new Promise(resolve => setTimeout(resolve, 300));
+                      
+                      // Recarregar o app com a nova atualização
+                      await Updates.reloadAsync();
+                      // Não continua aqui porque o app será recarregado
+                    },
+                  },
+                ]
+              );
+              // Continuar normalmente - o app não será bloqueado
             } else {
               console.log('Nenhuma atualização OTA disponível. Versão atual:', Updates.updateId);
             }
@@ -233,15 +279,36 @@ const MainApp: React.FC = () => {
     return (
       <View style={[styles.updateContainer, { backgroundColor: colors.background }]}>
         <View style={styles.updateContent}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <View style={styles.updateIconContainer}>
+            <Ionicons name="cloud-download" size={64} color={colors.primary} />
+          </View>
           <Text style={[styles.updateTitle, { color: colors.text }]}>
             Atualizando o app
           </Text>
           <Text style={[styles.updateProgress, { color: colors.textSecondary }]}>
             {updateProgress || 'Preparando atualização...'}
           </Text>
+          
+          {/* Barra de Progresso */}
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBarBackground, { backgroundColor: colors.surface }]}>
+              <View 
+                style={[
+                  styles.progressBarFill, 
+                  { 
+                    width: `${updateProgressPercent}%`,
+                    backgroundColor: colors.primary,
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={[styles.progressPercent, { color: colors.primary }]}>
+              {updateProgressPercent}%
+            </Text>
+          </View>
+          
           <Text style={[styles.updateSubtext, { color: colors.textSecondary }]}>
-            Por favor, aguarde...
+            Por favor, não feche o app
           </Text>
         </View>
       </View>
@@ -739,24 +806,55 @@ const createStyles = (colors: any) =>
         },
         updateContent: {
           alignItems: 'center',
-          maxWidth: 300,
+          maxWidth: 320,
+          width: '100%',
+        },
+        updateIconContainer: {
+          width: 120,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 24,
         },
         updateTitle: {
-          fontSize: 24,
+          fontSize: 28,
           fontWeight: '700',
-          marginTop: 24,
-          marginBottom: 8,
+          marginBottom: 12,
           textAlign: 'center',
         },
         updateProgress: {
           fontSize: 16,
-          marginTop: 8,
+          marginBottom: 24,
+          textAlign: 'center',
+          fontWeight: '500',
+        },
+        progressContainer: {
+          width: '100%',
+          marginBottom: 16,
+        },
+        progressBarBackground: {
+          width: '100%',
+          height: 8,
+          borderRadius: 4,
+          overflow: 'hidden',
+          marginBottom: 8,
+        },
+        progressBarFill: {
+          height: '100%',
+          borderRadius: 4,
+        },
+        progressPercent: {
+          fontSize: 18,
+          fontWeight: '700',
           textAlign: 'center',
         },
         updateSubtext: {
           fontSize: 14,
-          marginTop: 16,
+          marginTop: 8,
           textAlign: 'center',
+          opacity: 0.7,
         },
       });
 
