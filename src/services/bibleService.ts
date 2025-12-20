@@ -42,7 +42,6 @@ const API_BASE_URL = 'https://www.abibliadigital.com.br/api';
 const BIBLE_API_BACKUP = 'https://bible-api.com';
 // API alternativa em português - endpoint direto sem autenticação
 const API_BASE_URL_DIRECT = 'https://www.abibliadigital.com.br/api/verses';
-const BIBLE_API_PT = 'https://bible-api.com';
 
 // Token da API (defina EXPO_PUBLIC_BIBLE_API_TOKEN no seu ambiente)
 const BIBLE_API_TOKEN = process.env.EXPO_PUBLIC_BIBLE_API_TOKEN;
