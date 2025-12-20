@@ -255,9 +255,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
     setCheckingUpdate(true);
     try {
       // Verifica informações detalhadas sobre OTA
-      const otaInfo = await getOTAUpdateInfo();
-      
-      console.log('Status OTA:', otaInfo);
+      let otaInfo;
+      try {
+        otaInfo = await getOTAUpdateInfo();
+        console.log('Status OTA:', otaInfo);
+      } catch (otaError: any) {
+        console.error('Erro ao verificar OTA:', otaError);
+        otaInfo = {
+          isEnabled: false,
+          isAvailable: false,
+          currentlyRunning: null,
+          availableUpdate: null,
+          error: otaError?.message || 'Erro ao verificar atualizações OTA',
+        };
+      }
       
       if (otaInfo.isAvailable) {
         Alert.alert(
@@ -293,15 +304,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
 
       // Se não houver OTA, mostra informações e verifica atualização manual (APK)
       if (!otaInfo.isEnabled) {
-        Alert.alert(
-          'Atualizações OTA',
-          `OTA não está habilitado.\n\n${otaInfo.error || 'Certifique-se de estar usando um build de produção.'}\n\nVerificando atualizações manuais...`,
-          [{ text: 'OK' }]
-        );
+        // Não mostra alerta se for apenas um erro, apenas continua verificando APK
+        if (otaInfo.error && !otaInfo.error.includes('não está habilitado')) {
+          console.log('OTA não disponível, verificando atualizações manuais...');
+        }
       }
 
-      // Verifica atualização manual (APK)
-      const update = await checkForUpdates();
+      // Verifica atualização manual (APK) - com tratamento de erro separado
+      let update: AppUpdateInfo | null = null;
+      try {
+        update = await checkForUpdates();
+      } catch (updateError: any) {
+        console.error('Erro ao verificar atualizações do Firebase:', updateError);
+        // Continua mesmo se houver erro no Firebase
+      }
+
       if (update) {
         setUpdateInfo(update);
         setShowUpdateModal(true);
@@ -312,9 +329,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onUserPress, onNot
         
         Alert.alert('Atualização', message, [{ text: 'OK' }]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao verificar atualizações:', error);
-      Alert.alert('Erro', 'Não foi possível verificar atualizações. Tente novamente mais tarde.');
+      Alert.alert(
+        'Erro',
+        `Não foi possível verificar atualizações.\n\n${error?.message || 'Tente novamente mais tarde.'}`,
+        [{ text: 'OK' }]
+      );
     } finally {
       setCheckingUpdate(false);
     }
