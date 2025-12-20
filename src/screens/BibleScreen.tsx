@@ -54,10 +54,18 @@ export const BibleScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    loadVerseOfDay();
+  }, [version]);
+
+  useEffect(() => {
     if (selectedBook) {
       loadChapter(selectedBook.abbrev.pt, selectedChapter);
     }
-  }, [selectedBook, selectedChapter]);
+  }, [selectedBook, selectedChapter, version]);
+
+  useEffect(() => {
+    loadVerseOfDay();
+  }, [version]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
