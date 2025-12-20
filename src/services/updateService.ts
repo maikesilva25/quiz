@@ -31,6 +31,17 @@ export const getOTAUpdateInfo = async (): Promise<{
   error?: string;
 }> => {
   try {
+    // Verifica se Updates está disponível
+    if (typeof Updates === 'undefined' || !Updates) {
+      return {
+        isEnabled: false,
+        isAvailable: false,
+        currentlyRunning: null,
+        availableUpdate: null,
+        error: 'Sistema de atualizações não está disponível',
+      };
+    }
+
     const isEnabled = Updates.isEnabled;
     const currentlyRunning = Updates.updateId || null;
     
@@ -41,6 +52,17 @@ export const getOTAUpdateInfo = async (): Promise<{
         currentlyRunning,
         availableUpdate: null,
         error: 'Updates não está habilitado (pode estar em modo desenvolvimento)',
+      };
+    }
+
+    // Verifica se o método está disponível
+    if (typeof Updates.checkForUpdateAsync !== 'function') {
+      return {
+        isEnabled: false,
+        isAvailable: false,
+        currentlyRunning,
+        availableUpdate: null,
+        error: 'Função de verificação não está disponível (pode estar usando Expo Go)',
       };
     }
 
@@ -63,12 +85,22 @@ export const getOTAUpdateInfo = async (): Promise<{
     };
   } catch (error: any) {
     console.error('Erro ao verificar atualização OTA:', error);
+    
+    let errorMessage = 'Erro desconhecido';
+    if (error?.message) {
+      if (error.message.includes('not supported in Expo Go')) {
+        errorMessage = 'Atualizações OTA não funcionam no Expo Go. Use um build de produção.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return {
-      isEnabled: Updates.isEnabled,
+      isEnabled: Updates?.isEnabled || false,
       isAvailable: false,
-      currentlyRunning: Updates.updateId || null,
+      currentlyRunning: Updates?.updateId || null,
       availableUpdate: null,
-      error: error?.message || 'Erro desconhecido',
+      error: errorMessage,
     };
   }
 };
@@ -91,6 +123,14 @@ export const checkOTAUpdate = async (): Promise<boolean> => {
  */
 export const applyOTAUpdate = async (): Promise<{ success: boolean; message: string }> => {
   try {
+    // Verifica se Updates está disponível
+    if (typeof Updates === 'undefined' || !Updates) {
+      return {
+        success: false,
+        message: 'Sistema de atualizações não está disponível.',
+      };
+    }
+
     if (!Updates.isEnabled) {
       return {
         success: false,
@@ -98,7 +138,20 @@ export const applyOTAUpdate = async (): Promise<{ success: boolean; message: str
       };
     }
 
-    console.log('Verificando atualização OTA...');
+    console.log('Verificando atualização OTA...', {
+      isEnabled: Updates.isEnabled,
+      updateId: Updates.updateId,
+      channel: Updates.channel,
+    });
+
+    // Verifica se o método está disponível
+    if (typeof Updates.checkForUpdateAsync !== 'function') {
+      return {
+        success: false,
+        message: 'Função de verificação de atualização não está disponível. Você pode estar usando Expo Go.',
+      };
+    }
+
     const update = await Updates.checkForUpdateAsync();
     
     if (!update.isAvailable) {
@@ -109,13 +162,24 @@ export const applyOTAUpdate = async (): Promise<{ success: boolean; message: str
     }
 
     console.log('Atualização disponível, baixando...');
+    
+    // Verifica se o método de fetch está disponível
+    if (typeof Updates.fetchUpdateAsync !== 'function') {
+      return {
+        success: false,
+        message: 'Função de download de atualização não está disponível.',
+      };
+    }
+
     const fetchResult = await Updates.fetchUpdateAsync();
     
     if (fetchResult.isNew) {
       console.log('Nova atualização baixada, recarregando app...');
       // Pequeno delay para garantir que o usuário veja a mensagem
       setTimeout(() => {
-        Updates.reloadAsync();
+        if (typeof Updates.reloadAsync === 'function') {
+          Updates.reloadAsync();
+        }
       }, 500);
       
       return {
@@ -130,9 +194,23 @@ export const applyOTAUpdate = async (): Promise<{ success: boolean; message: str
     }
   } catch (error: any) {
     console.error('Erro ao aplicar atualização OTA:', error);
+    
+    // Mensagens de erro mais específicas
+    let errorMessage = 'Não foi possível aplicar a atualização.';
+    
+    if (error?.message) {
+      if (error.message.includes('not supported in Expo Go')) {
+        errorMessage = 'Atualizações OTA não funcionam no Expo Go. Use um build de produção.';
+      } else if (error.message.includes('checkForUpdateAsync')) {
+        errorMessage = 'Erro ao verificar atualizações. Verifique sua conexão com a internet.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return {
       success: false,
-      message: error?.message || 'Não foi possível aplicar a atualização. Tente novamente mais tarde.',
+      message: errorMessage,
     };
   }
 };
