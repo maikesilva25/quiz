@@ -97,4 +97,65 @@ export interface Notification {
   createdAt: Date;
 }
 
-// ... existing code ...
+// User interface
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  photoURL?: string;
+  verified: boolean;
+  blocked: boolean;
+  needsPasswordChange: boolean;
+  isAdmin: boolean;
+  coins: number;
+  titles: string[];
+  purchasedItems: string[];
+  activeFrame?: string;
+  activeTheme?: string;
+  adFreeUntil?: Date;
+}
+
+// Shop types
+export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type ShopItemType = 'frame' | 'title' | 'feed_boost' | 'quiz_power_up' | 'ad_removal';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  type: ShopItemType;
+  price: number;
+  rarity: ItemRarity;
+  icon: string;
+  category: string;
+  available: boolean;
+  metadata?: Record<string, any>;
+  duration?: number; // Para itens temporários (feed_boost, ad_removal)
+  createdAt: Date;
+}
+
+export interface Purchase {
+  id: string;
+  userId: string;
+  itemId: string;
+  itemName: string;
+  itemType: ShopItemType;
+  price: number;
+  createdAt: Date;
+}
+
+export interface FeedBoost {
+  id: string;
+  userId: string;
+  oracaoId: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export interface PowerUp {
+  id: string;
+  userId: string;
+  type: 'eliminate' | 'time' | 'hint';
+  quantity: number;
+  createdAt: Date;
+}

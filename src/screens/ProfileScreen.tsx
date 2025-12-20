@@ -863,6 +863,10 @@ const createStyles = (colors: any) =>
       padding: 20,
       backgroundColor: colors.surface,
     },
+    profileContent: {
+      alignItems: 'center',
+      padding: 20,
+    },
     notificationsButton: {
       position: 'relative',
       padding: 8,

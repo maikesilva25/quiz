@@ -139,7 +139,7 @@ export const uploadProfilePhoto = async (userId: string, uri: string): Promise<s
   return downloadURL;
 };
 
-export const updateUserProfile = async (userId: string, data: Partial<User>) => {
+export const updateUserProfile = async (userId: string, data: Partial<User & { bio?: string }>) => {
   await updateDoc(doc(db, 'users', userId), data);
 };
 
