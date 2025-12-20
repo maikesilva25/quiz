@@ -36,7 +36,17 @@ export const BibleScreen: React.FC = () => {
   const [searchResults, setSearchResults] = useState<BibleVerse[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [version, setVersion] = useState('nvi');
+  const [showVersionSelector, setShowVersionSelector] = useState(false);
   const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
+
+  const bibleVersions = [
+    { code: 'nvi', name: 'Nova Versão Internacional (NVI)' },
+    { code: 'acf', name: 'Almeida Corrigida Fiel (ACF)' },
+    { code: 'ara', name: 'Almeida Revista e Atualizada (ARA)' },
+    { code: 'as21', name: 'Almeida Século 21 (AS21)' },
+    { code: 'kjv', name: 'King James Version (KJV)' },
+    { code: 'nvt', name: 'Nova Versão Transformadora (NVT)' },
+  ];
 
   useEffect(() => {
     loadBooks();
@@ -158,6 +168,14 @@ export const BibleScreen: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => setShowVersionSelector(true)}
+            style={[styles.versionButton, { backgroundColor: colors.surface }]}
+          >
+            <Text style={[styles.versionText, { color: colors.primary }]}>
+              {bibleVersions.find(v => v.code === version)?.code.toUpperCase() || 'NVI'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowVerseOfDay(true)}
             style={styles.iconButton}
@@ -386,6 +404,61 @@ export const BibleScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Version Selector Modal */}
+      <Modal
+        visible={showVersionSelector}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowVersionSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Versão da Bíblia</Text>
+              <TouchableOpacity onPress={() => setShowVersionSelector(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={bibleVersions}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.versionItem,
+                    { backgroundColor: colors.surface },
+                    version === item.code && { backgroundColor: colors.primary + '20' },
+                  ]}
+                  onPress={() => {
+                    setVersion(item.code);
+                    setShowVersionSelector(false);
+                    if (selectedBook) {
+                      loadChapter(selectedBook.abbrev.pt, selectedChapter);
+                    }
+                    if (verseOfDay) {
+                      loadVerseOfDay();
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.versionItemName,
+                      { color: version === item.code ? colors.primary : colors.text },
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  {version === item.code && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -429,6 +502,16 @@ const createStyles = (colors: any) =>
     },
     iconButton: {
       padding: 8,
+    },
+    versionButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      marginRight: 8,
+    },
+    versionText: {
+      fontSize: 12,
+      fontWeight: '600',
     },
     chapterNav: {
       flexDirection: 'row',
@@ -564,6 +647,18 @@ const createStyles = (colors: any) =>
       padding: 16,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    versionItem: {
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    versionItemName: {
+      fontSize: 16,
+      fontWeight: '500',
     },
   });
 
